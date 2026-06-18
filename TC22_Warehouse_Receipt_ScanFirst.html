@@ -206,6 +206,21 @@
     .gun{display:none}
     .screen{height:100vh;height:100dvh;border-radius:0}
   }
+
+  /* PRINT: render only the 3x2 labels, one per page, for the Android print dialog */
+  #printArea{display:none}
+  @media print{
+    @page{size:3in 2in;margin:0}
+    html,body{background:#fff;margin:0}
+    body>*{display:none !important}
+    #printArea{display:block !important}
+    .plabel{width:3in;height:2in;box-sizing:border-box;padding:0.13in 0.15in;page-break-after:always;color:#000;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+    .plabel .ph{font-size:8.5pt;font-weight:bold}
+    .plabel .pwr{font-size:26pt;font-weight:800;line-height:1;margin-top:3pt}
+    .plabel .pbar{width:2.5in;height:0.55in;display:block;margin:5pt 0 1pt}
+    .plabel .pto{font-size:11pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .plabel .ppc{font-size:15pt;font-weight:800;margin-top:5pt}
+  }
 </style>
 
 <div class="device">
@@ -424,12 +439,24 @@
   </ul>
 </div>
 
-<!-- REAL PRINTING ON THE TC22:
-     1) Install the "Zebra Browser Print" app on the device and run its service.
-     2) Put BrowserPrint-3.x.min.js (from Zebra) in this folder and uncomment the line below.
-     3) Pair the ZQ511 over Bluetooth Classic. Confirm + print will then send live labels.
-<script src="BrowserPrint-3.1.250.min.js"></script>
--->
+<!-- print-only container (filled at print time) -->
+<div id="printArea"></div>
+
+<!-- Code 128 barcode renderer for the printed label -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+
+<!-- PRINTING ON THE TC22 — two ways:
+   EASY (no form, Play Store): install "Zebra Print", which adds the ZQ511 to Android's print system.
+     Confirm & print opens the Android print dialog with the 3x2 label ready — pick the ZQ511.
+   SILENT (optional): Zebra Browser Print (sideloaded) — if its service is running and its JS SDK
+     file (BrowserPrint-3.1.250.min.js) sits in this folder, the app prints silently instead.
+     1) Install the "Zebra Browser Print" app on the TC22, open it, allow permissions, select the ZQ511 as the default device, leave it running.
+     2) Download Zebra's Browser Print JS SDK, and drop the file in this repo named exactly:
+            BrowserPrint-3.1.250.min.js   (or BrowserPrint.min.js)
+        The app auto-loads it — no code editing needed.
+     3) One time in Chrome, visit  https://localhost:9101  and accept the security warning (Advanced -> Proceed),
+        because this site is HTTPS and Browser Print runs on localhost.
+     Then "Confirm & print" sends live labels to the ZQ511. If the file/app aren't present, it safely simulates. -->
 <script>
   var CUSTOMERS=[
     {n:"Sports Center",c:"SC"},{n:"21st Century Hardware",c:"TCH"},{n:"2577 Management Ltd",c:"2ML"},
@@ -744,10 +771,21 @@
       '^CF0,44^FO24,320^FDPiece '+i+' of '+n+'^FS'+
       '^XZ';
   }
-  /* Zebra Browser Print (feature-detected; printing simulated if absent) */
+  /* Zebra Browser Print: auto-load the SDK if present, then grab the default printer.
+     Falls back to simulation if the JS file or the Browser Print service isn't there. */
+  function loadBP(names,done){
+    if(typeof BrowserPrint!=='undefined'){done();return;}
+    if(!names.length){done();return;}
+    var s=document.createElement('script');s.src=names[0];
+    s.onload=function(){done();};
+    s.onerror=function(){loadBP(names.slice(1),done);};
+    document.head.appendChild(s);
+  }
   function initPrinter(){
-    if(typeof BrowserPrint==='undefined') return;
-    try{ BrowserPrint.getDefaultDevice('printer', function(d){window.__zebra=d;}, function(){}); }catch(e){}
+    loadBP(['BrowserPrint-3.1.250.min.js','BrowserPrint.min.js'],function(){
+      if(typeof BrowserPrint==='undefined') return;
+      try{ BrowserPrint.getDefaultDevice('printer', function(d){window.__zebra=d;toast('ZQ511 connected — live printing ready');}, function(){}); }catch(e){}
+    });
   }
 
   /* confirmation before printing */
@@ -781,12 +819,27 @@
     document.getElementById('confirmOv').classList.add('show');
   }
   function closeConfirm(){document.getElementById('confirmOv').classList.remove('show');}
+  /* render the 3x2 labels into the print-only container (one page each) */
+  function buildPrintArea(n,wr,con){
+    var pa=document.getElementById('printArea'); pa.innerHTML='';
+    for(var i=1;i<=n;i++){
+      var lab=document.createElement('div'); lab.className='plabel';
+      lab.innerHTML='<div class="ph">LCL OCEAN SERVICES · WAREHOUSE RECEIPT</div>'+
+        '<div class="pwr"></div><svg class="pbar"></svg>'+
+        '<div class="pto">TO: <b></b></div>'+
+        '<div class="ppc">Piece '+i+' of '+n+'</div>';
+      lab.querySelector('.pwr').textContent=wr;
+      lab.querySelector('.pto b').textContent=con;
+      pa.appendChild(lab);
+      try{ if(window.JsBarcode) JsBarcode(lab.querySelector('.pbar'),wr,{format:'CODE128',displayValue:false,height:48,margin:0,width:1.6}); }catch(e){}
+    }
+  }
   function doPrint(){
     var n=lblCountVal(), p=parseInt(document.getElementById('lblTotal').textContent)||0;
     if(n!==p && !cfReason){toast('Pick a reason for the difference');return;}
-    // build + send one 3x2 label per piece (1 of n, 2 of n, …)
     var wr=document.getElementById('okWr').textContent;
     var con=conName||document.getElementById('consignee').value||'';
+    // 1) silent path if Zebra Browser Print is available; 2) else the Android print dialog (Zebra Print)
     var real=false;
     if(window.__zebra){
       try{ for(var i=1;i<=n;i++){ window.__zebra.send(buildZPL(wr,con,i,n), null, null); } real=true; }catch(e){ real=false; }
@@ -800,7 +853,8 @@
     var row=document.createElement('div');
     row.textContent='✓ Printed '+n+' label'+(n>1?'s':'')+' at '+t+detail+' · saved to WR';
     document.getElementById('printLog').appendChild(row);
-    toast(real? ('Sent '+n+' label'+(n>1?'s':'')+' to ZQ511 🖨') : ('Simulated '+n+' label'+(n>1?'s':'')+' (Browser Print not detected)'));
+    if(real){ toast('Sent '+n+' label'+(n>1?'s':'')+' to ZQ511 🖨'); }
+    else { buildPrintArea(n,wr,con); toast('Opening print — choose the ZQ511'); setTimeout(function(){window.print();},300); }
   }
   document.querySelectorAll('#cfReasons .chip').forEach(function(c){
     c.addEventListener('click',function(){
