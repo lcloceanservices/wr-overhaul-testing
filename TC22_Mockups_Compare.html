@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LCL TC22 Mockups — Side by Side</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#1b2330;font-family:"Segoe UI",Roboto,system-ui,sans-serif;color:#e8edf3}
+  header{padding:18px 22px;border-bottom:1px solid #2c3848;background:#10161f}
+  header h1{margin:0;font-size:18px}
+  header p{margin:4px 0 0;font-size:13px;color:#9fb0c0}
+  .wrap{display:flex;gap:18px;padding:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{flex:1 1 460px;max-width:560px;background:#222c3a;border:1px solid #2c3848;border-radius:14px;overflow:hidden}
+  .col .hd{padding:13px 16px;border-bottom:1px solid #2c3848}
+  .col .hd h2{margin:0;font-size:15px}
+  .col .hd .tag{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px}
+  .v1 .tag{background:#33b6c2;color:#06262a}
+  .v2 .tag{background:#e87440;color:#3a1c08}
+  .col .hd p{margin:8px 0 0;font-size:12px;color:#9fb0c0;line-height:1.5}
+  iframe{width:100%;height:880px;border:none;background:#c9ced6;display:block}
+  .open{display:inline-block;margin-top:8px;font-size:12px;color:#33b6c2;text-decoration:none}
+  .open:hover{text-decoration:underline}
+</style>
+
+<header>
+  <h1>LCL Ocean Services — TC22 Warehouse Receipt mockups</h1>
+  <p>Two takes on the same digital receipt. Both are interactive — tap through them. Open this file in a browser to compare side by side.</p>
+</header>
+
+<div class="wrap">
+  <div class="col v1">
+    <div class="hd">
+      <h2>Version 1 — Form</h2>
+      <span class="tag">PAPER-FAITHFUL</span>
+      <p>One scrolling form that mirrors the paper warehouse receipt field-for-field. Easiest to recognize for anyone used to the paper sheet.</p>
+      <a class="open" href="TC22_Warehouse_Receipt_Mockup.html" target="_blank">Open full screen ↗</a>
+    </div>
+    <iframe src="TC22_Warehouse_Receipt_Mockup.html" title="Version 1 — Form"></iframe>
+  </div>
+
+  <div class="col v2">
+    <div class="hd">
+      <h2>Version 2 — Scan-first</h2>
+      <span class="tag">HANDHELD-NATIVE</span>
+      <p>Same data, broken into quick steps in the order a receiver works a truck: scan → parties → cargo → condition → review. Bigger targets, less typing, offline-ready.</p>
+      <a class="open" href="TC22_Warehouse_Receipt_ScanFirst.html" target="_blank">Open full screen ↗</a>
+    </div>
+    <iframe src="TC22_Warehouse_Receipt_ScanFirst.html" title="Version 2 — Scan-first"></iframe>
+  </div>
+</div>

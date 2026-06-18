@@ -1,0 +1,831 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0e12">
+<title>TC22 — LCL Warehouse Receipt (Scan-First Mockup)</title>
+<style>
+  :root{
+    --teal:#33b6c2;--teal-d:#1f8d98;--orange:#e87440;--navy:#15243f;
+    --bg:#eef1f5;--card:#fff;--line:#d8dee6;--ink:#1c2330;--muted:#6b7682;--field:#f4f6f9;--ok:#1f8a4c;--warn:#c0392b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:#c9ced6;font-family:"Segoe UI",Roboto,system-ui,sans-serif;color:var(--ink);
+        display:flex;flex-wrap:wrap;gap:34px;justify-content:center;align-items:flex-start;padding:34px 16px}
+  .device{width:374px;flex:0 0 auto}
+  .label{text-align:center;font-size:12px;color:#4a5260;margin-bottom:8px;letter-spacing:.06em;text-transform:uppercase}
+  .phone{background:#0d0f12;border-radius:30px;padding:14px 10px 16px;box-shadow:0 18px 40px rgba(0,0,0,.35);position:relative}
+  .gun{position:absolute;left:50%;transform:translateX(-50%);bottom:-14px;width:120px;height:14px;background:#0d0f12;border-radius:0 0 16px 16px}
+  .screen{background:var(--bg);border-radius:18px;overflow:hidden;height:740px;display:flex;flex-direction:column;position:relative}
+
+  .statusbar{background:#0b0e12;color:#b9c4cf;font-size:11px;display:flex;justify-content:space-between;padding:5px 14px;align-items:center}
+  .statusbar .off{color:#7fdca0}
+
+  .banner{background:#000;padding:9px 14px;display:flex;align-items:center}
+  .banner svg{display:block;height:40px;width:auto}
+  .subbar{background:#0b1c2e;color:#fff;font-size:12px;font-weight:600;padding:6px 14px;display:flex;justify-content:space-between;align-items:center}
+  .subbar small{color:#9fb0c0;font-weight:400}
+
+  /* step progress */
+  .steps{display:flex;gap:6px;padding:11px 14px 4px;background:var(--bg)}
+  .steps .s{flex:1;height:5px;border-radius:3px;background:#d3dae2}
+  .steps .s.done{background:var(--teal)}
+  .steps .s.cur{background:var(--orange)}
+  .steptitle{padding:4px 16px 0;font-size:16px;font-weight:800;color:var(--navy)}
+  .stepsub{padding:1px 16px 0;font-size:11.5px;color:var(--muted)}
+
+  .content{flex:1;overflow-y:auto;padding:12px 14px 92px}
+  .content::-webkit-scrollbar{width:0}
+  .step{display:none}.step.show{display:block}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:12px}
+  label.f{display:block;font-size:11px;color:var(--muted);margin:0 0 4px;font-weight:600}
+  .field{width:100%;border:1px solid var(--line);background:var(--field);border-radius:9px;padding:11px;font-size:14px;color:var(--ink);font-family:inherit}
+  .field:focus{outline:none;border-color:var(--teal);background:#fff}
+  .mb0{margin-bottom:0}
+  textarea.field{resize:none;min-height:60px}
+  .row{display:flex;gap:9px;margin-bottom:11px}.row>div{flex:1}
+  .pill{display:inline-block;background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;vertical-align:middle}
+  .pill.cam{background:var(--orange)}
+
+  /* big scan target */
+  .scanbig{border:2.5px dashed var(--teal);background:#eaf6f8;border-radius:16px;padding:26px 14px;text-align:center;color:var(--teal-d)}
+  .scanbig .ic{font-size:46px;line-height:1}
+  .scanbig b{display:block;font-size:17px;margin-top:6px}
+  .scanbig span{font-size:12px;color:var(--muted)}
+  .scanned{margin-top:12px}
+  .trk{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-bottom:8px;background:#fbfcfd}
+  .trk .tag{width:26px;height:26px;border-radius:7px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 auto}
+  .trk .v{flex:1;font-size:14px;font-weight:600;font-family:"Courier New",monospace}
+  .trk .x{border:none;background:none;color:var(--muted);font-size:16px}
+
+  /* collapsible cargo lines */
+  .cline{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff;overflow:hidden}
+  .cline.open{border-color:var(--teal)}
+  .clhead{display:flex;align-items:center;gap:9px;padding:13px 12px}
+  .cltitle{font-size:11px;font-weight:800;color:var(--teal-d);text-transform:uppercase;letter-spacing:.05em;flex:0 0 auto}
+  .clsum{flex:1;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cline.open .clsum{display:none}
+  .clchev{color:var(--muted);font-size:12px;transition:transform .2s}
+  .cline.open .clchev{transform:rotate(180deg)}
+  .clx{border:none;background:none;color:var(--muted);font-size:16px;padding:0 2px;line-height:1}
+  .clbody{display:none;padding:0 12px 13px}
+  .cline.open .clbody{display:block}
+  .addline{width:100%;border:1.5px dashed var(--teal);background:#eaf6f8;color:var(--teal-d);border-radius:12px;padding:14px;font-size:14px;font-weight:800;font-family:inherit}
+
+  /* repack (consolidate / break down) */
+  .repack{background:#f7fafb;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:12px}
+  .rprow{display:flex;gap:7px;align-items:center;margin-bottom:7px}
+  .rprow:last-child{margin-bottom:0}
+  .repack .field{padding:9px 8px;font-size:13px}
+  .rp-num{flex:0 0 56px;text-align:center}
+  .rp-u{flex:0 0 66px}
+  .rp-act{flex:1}
+  .rp-arrow{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--teal-d);width:30px}
+
+  .reqhint{padding:5px 16px 0;font-size:11.5px;color:var(--orange);font-weight:700;display:none}
+  .reqhint::before{content:"⚠ "}
+  .req{color:var(--orange)}
+
+  /* inventory items */
+  .invintro{font-size:12px;color:var(--muted);margin:0 0 11px;line-height:1.5}
+  .item{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:9px;background:#fbfcfd}
+  .ithumb{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,#7d8a99,#56616f);flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700}
+  .item .idesc{flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px;font-size:12.5px;color:var(--ink);font-family:inherit}
+  .item .ix{border:none;background:none;color:var(--muted);font-size:16px;flex:0 0 auto}
+  .invbadge{display:inline-block;background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
+
+  /* label print confirm */
+  .lblnote{display:none;background:#fff5ec;border:1px solid #f3c79a;color:#a85410;border-radius:9px;padding:9px 11px;font-size:11.5px;line-height:1.45;margin-bottom:11px}
+  .lblnote.show{display:block}
+  .lblnote .matchbtn{display:inline-block;margin-top:6px;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;font-family:inherit}
+  .cfrow{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #eef1f5}
+  .cfrow b{font-weight:800}
+  .cfdelta{font-size:12.5px;font-weight:700;border-radius:9px;padding:9px 11px;margin:11px 0 0;line-height:1.45}
+  .cfdelta.match{background:#e3f6ea;color:#11703f}
+  .cfdelta.diff{background:#fff5ec;border:1px solid #f3c79a;color:#a85410}
+  .plog{font-size:11px;color:var(--ok);margin-top:10px;text-align:left}
+  .plog div{padding:2px 0}
+
+  /* 3x2 label preview (1.5:1) */
+  .label3x2{width:270px;height:180px;margin:0 auto 14px;background:#fff;border:1px solid #222;border-radius:4px;padding:9px 11px;color:#000;font-family:"Arial",sans-serif;text-align:left;display:flex;flex-direction:column}
+  .label3x2 .lh{font-size:10px;font-weight:800;letter-spacing:.5px}
+  .label3x2 .lwr{font-size:23px;font-weight:900;line-height:1;margin-top:3px}
+  .label3x2 .lbar{height:42px;margin:5px 0 1px;background:repeating-linear-gradient(90deg,#000 0 2px,#fff 2px 4px,#000 4px 5px,#fff 5px 9px,#000 9px 11px,#fff 11px 14px)}
+  .label3x2 .lbarn{font-size:11px;letter-spacing:2px;text-align:center}
+  .label3x2 .lcon{font-size:12px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .label3x2 .lpc{font-size:16px;font-weight:800;margin-top:auto}
+  .lblcap{font-size:10.5px;color:var(--muted);text-align:center;margin:-8px 0 12px}
+
+  .ac{position:relative}
+  .ac-list{position:absolute;left:0;right:0;top:calc(100% + 3px);background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.14);z-index:15;max-height:200px;overflow-y:auto;display:none}
+  .ac-list.show{display:block}
+  .ac-item{padding:11px;font-size:14px;border-bottom:1px solid #eef1f5}
+  .ac-item:last-child{border-bottom:none}.ac-item:active{background:#e9f6f8}
+  .ac-item small{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+  .ac-item .hl{color:var(--teal-d);font-weight:700}
+  .ac-new{padding:11px;font-size:12.5px;color:var(--orange);font-weight:600}
+  .newflag{font-size:11px;color:var(--orange);font-weight:700;margin-top:9px;display:none}
+  .newflag::before{content:"● "}
+  .modal.left{text-align:left}.modal.left h3,.modal.left p{text-align:center}
+  .modal .f{margin-top:0}
+
+  .rxbox{background:#0b1c2e;color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px;text-align:center}
+  .rxbox small{display:block;font-size:10.5px;color:#9fb0c0;text-transform:uppercase;letter-spacing:.08em}
+  .rxbox b{font-size:22px;letter-spacing:1px;color:var(--teal)}
+  .rxbox.empty b{color:#6b7a8a;font-size:15px;letter-spacing:0}
+
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .stepper button{width:48px;height:48px;border:none;background:var(--field);font-size:24px;color:var(--teal-d)}
+  .stepper input{flex:1;border:none;text-align:center;font-size:18px;width:100%;font-weight:800}
+  .stepper input:focus{outline:none}
+
+  .chips{display:flex;gap:9px;flex-wrap:wrap}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:700;color:var(--muted);flex:1;text-align:center}
+  .chip.on{background:var(--orange);border-color:var(--orange);color:#fff}
+
+  .photos{display:flex;gap:10px;flex-wrap:wrap}
+  .addphoto{width:72px;height:72px;border:2px dashed var(--line);border-radius:12px;background:var(--field);color:var(--muted);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+  .addphoto span{font-size:24px;line-height:1}
+  .thumb{width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,#7d8a99,#56616f);position:relative;color:#fff;display:flex;align-items:flex-end;overflow:hidden}
+  .thumb b{font-size:9px;background:rgba(0,0,0,.45);width:100%;padding:2px 4px}
+  .thumb i{position:absolute;top:3px;right:5px;font-style:normal;font-size:13px;background:rgba(0,0,0,.4);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
+
+  .sigpad{height:78px;border:2px dashed var(--line);border-radius:11px;background:var(--field);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;font-style:italic}
+  .sigpad.signed{font-style:normal;font-family:"Segoe Script","Bradley Hand",cursive;font-size:26px;color:var(--navy);border-style:solid;border-color:var(--teal)}
+
+  .sumrow{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #eef1f5}
+  .sumrow:last-child{border-bottom:none}
+  .sumrow span{color:var(--muted)}.sumrow b{color:var(--ink);text-align:right}
+
+  /* bottom nav */
+  .nav{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:11px 13px;display:flex;gap:9px}
+  .btn{border:none;border-radius:11px;padding:15px;font-size:15px;font-weight:800;font-family:inherit}
+  .btn.back{flex:0 0 96px;background:#fff;border:1.5px solid var(--line);color:var(--muted)}
+  .btn.next{flex:1;background:var(--teal);color:#fff}
+  .btn.submit{flex:1;background:var(--ok);color:#fff}
+  .btn:disabled{opacity:.45}
+  .btn:active{transform:translateY(1px)}
+
+  /* scanner viewfinder */
+  .scanview{position:absolute;inset:0;background:#0c1116;display:none;flex-direction:column;z-index:25}
+  .scanview.show{display:flex}
+  .scanview .top{color:#cdd6e0;font-size:13px;padding:14px;display:flex;justify-content:space-between;align-items:center}
+  .scanview .top button{background:none;border:none;color:#cdd6e0;font-size:22px}
+  .vf{flex:1;display:flex;align-items:center;justify-content:center}
+  .reticle{width:230px;height:150px;border:2px solid rgba(255,255,255,.35);border-radius:10px;position:relative}
+  .laser{position:absolute;left:8px;right:8px;height:2px;background:var(--orange);box-shadow:0 0 8px var(--orange);animation:sweep 1.4s ease-in-out infinite}
+  @keyframes sweep{0%,100%{top:14%}50%{top:86%}}
+  .scanview .hint{color:#8d99a6;text-align:center;font-size:12px;padding:0 30px 26px}
+
+  .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:20}
+  .overlay.show{display:flex}
+  .scrim{position:absolute;inset:0;background:rgba(6,15,26,.55)}
+  .modal{position:relative;background:#fff;border-radius:16px;width:300px;max-width:86%;padding:18px;text-align:center;z-index:1}
+  .modal .ic{width:54px;height:54px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:26px}
+  .modal h3{margin:0 0 6px;font-size:17px}
+  .modal p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
+  .modal .mbtn{width:100%;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;background:var(--teal);color:#fff;font-family:inherit}
+
+  .toast{position:absolute;bottom:84px;left:50%;transform:translateX(-50%);background:#1c2330;color:#fff;padding:10px 16px;border-radius:20px;font-size:12px;opacity:0;transition:.25s;z-index:30;white-space:nowrap}
+  .toast.show{opacity:1;bottom:94px}
+
+  .note{max-width:340px;flex:1 1 290px;font-size:13px;color:#3a414c;line-height:1.6}
+  .note h2{font-size:15px;color:var(--navy);margin:18px 0 8px}.note h2:first-child{margin-top:0}
+  .note ul{margin:6px 0 8px;padding-left:18px}.note li{margin:4px 0}
+  .note code{background:#dde3ea;padding:1px 5px;border-radius:4px;font-size:12px}
+
+  /* ON-DEVICE: fill the TC22 screen (drop the desktop phone frame) */
+  @media (max-width:560px){
+    body{padding:0;gap:0;background:#0b0e12;display:block}
+    .device{width:100%}
+    .label{display:none}
+    .note{display:none}
+    .phone{padding:0;border-radius:0;box-shadow:none;background:transparent}
+    .gun{display:none}
+    .screen{height:100vh;height:100dvh;border-radius:0}
+  }
+</style>
+
+<div class="device">
+  <div class="label">Zebra TC22 · Scan-First (handheld-native)</div>
+  <div class="phone">
+    <div class="screen">
+
+      <div class="statusbar">
+        <span>9:41</span>
+        <span><span class="off">● Online · synced</span> &nbsp; ▮▮▮ 84%</span>
+      </div>
+
+      <div class="banner">
+        <svg viewBox="0 0 624 150" xmlns="http://www.w3.org/2000/svg" aria-label="LCL Ocean Services">
+          <g>
+            <rect x="8" y="14" width="42" height="48" rx="13" fill="#33b6c2"/>
+            <polygon points="124,12 124,98 54,55" fill="#33b6c2"/>
+            <path d="M8,108 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>
+            <path d="M8,130 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>
+          </g>
+          <text x="138" y="118" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="104" fill="#33b6c2">LCL</text>
+          <text x="350" y="66" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="54" fill="#33b6c2">OCEAN</text>
+          <text x="350" y="120" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="47" fill="#e87440">SERVICES</text>
+        </svg>
+      </div>
+      <div class="subbar"><span>Warehouse Receipt</span><small id="rxTag">New intake</small></div>
+
+      <div class="steps" id="bars"></div>
+      <div class="steptitle" id="stTitle">Scan freight</div>
+      <div class="stepsub" id="stSub">Scan each tracking label as it comes off the truck.</div>
+      <div class="reqhint" id="reqHint"></div>
+
+      <div class="content">
+
+        <!-- STEP 1: SCAN -->
+        <div class="step show" data-step="0">
+          <div class="scanbig" onclick="openScan()">
+            <div class="ic">▦</div>
+            <b>Tap to scan tracking #</b>
+            <span>Or pull the trigger on the TC22</span>
+          </div>
+          <div class="scanned" id="scanned"></div>
+        </div>
+
+        <!-- STEP 2: PARTIES -->
+        <div class="step" data-step="1">
+          <div class="rxbox empty" id="rxbox"><small>Receipt #</small><b id="rxNum">Select consignee</b></div>
+          <div class="card">
+            <label class="f">Shipper <span class="req">*</span> <span class="pill">SEARCH SHIPPERS</span></label>
+            <div class="ac">
+              <input class="field mb0" id="shipper" autocomplete="off" placeholder="Type to search shippers… (try Nike)"
+                     oninput="acFilter('shipper')" onfocus="acFilter('shipper')">
+              <div class="ac-list" id="shipper-list"></div>
+            </div>
+            <div class="newflag" id="shipper-new">New shipper — pending office verification</div>
+          </div>
+          <div class="card">
+            <label class="f">Consignee <span class="req">*</span> <span class="pill">SEARCH CUSTOMERS</span></label>
+            <div class="ac">
+              <input class="field mb0" id="consignee" autocomplete="off" placeholder="Type to search customers…"
+                     oninput="acFilter('consignee')" onfocus="acFilter('consignee')">
+              <div class="ac-list" id="consignee-list"></div>
+            </div>
+            <div class="newflag" id="consignee-new">New customer — pending office verification</div>
+          </div>
+        </div>
+
+        <!-- STEP 3: CARGO -->
+        <div class="step" data-step="2">
+          <div id="v2cargo"></div>
+          <button class="addline" onclick="addV2Cargo()">＋ Add cargo line</button>
+        </div>
+
+        <!-- STEP 4: CONDITION & INVENTORY -->
+        <div class="step" data-step="3">
+          <div class="card">
+            <label class="f">Condition flags</label>
+            <div class="chips" style="margin-bottom:0">
+              <div class="chip" onclick="this.classList.toggle('on')">Short</div>
+              <div class="chip" onclick="this.classList.toggle('on')">Damaged</div>
+            </div>
+          </div>
+          <div class="card">
+            <label class="f">Items <span class="invbadge">INVENTORY</span></label>
+            <p class="invintro">Capture each item — the Inventory tool photographs it, identifies it, and fills in the description. Captured items flow into the receipt Notes.</p>
+            <button class="addline" onclick="captureItem()">📷 Capture item</button>
+            <div id="items"></div>
+          </div>
+        </div>
+
+        <!-- STEP 5: REVIEW & SIGN -->
+        <div class="step" data-step="4">
+          <div class="rxbox" id="rxbox2"><small>Receipt #</small><b id="rxNum2">—</b></div>
+          <div class="card">
+            <div class="sumrow"><span>Shipper</span><b id="sShip">—</b></div>
+            <div class="sumrow"><span>Consignee</span><b id="sCon">—</b></div>
+            <div class="sumrow"><span>Tracking #s</span><b id="sTrk">0</b></div>
+            <div class="sumrow"><span>Cargo lines</span><b id="sLines">1</b></div>
+            <div class="sumrow"><span>Total pieces</span><b id="sPcs">1</b></div>
+          </div>
+          <div class="card">
+            <label class="f">WH LOC</label>
+            <input class="field" placeholder="e.g. A-12" style="margin-bottom:13px">
+            <label class="f">Notes <span class="invbadge">AUTO-FILLED FROM ITEMS</span></label>
+            <textarea class="field mb0" id="notes" rows="5" placeholder="Item descriptions captured by Inventory appear here…"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="nav">
+        <button class="btn back" id="bBack" onclick="go(-1)" disabled>Back</button>
+        <button class="btn next" id="bNext" onclick="go(1)">Next</button>
+        <button class="btn submit" id="bSubmit" onclick="submit()" style="display:none">Submit ➜ Bubble</button>
+      </div>
+
+      <!-- scanner -->
+      <div class="scanview" id="scanview">
+        <div class="top"><span>Scan tracking #</span><button onclick="closeScan()">✕</button></div>
+        <div class="vf"><div class="reticle"><div class="laser"></div></div></div>
+        <div class="hint">Aim the TC22 imager — capture is automatic. Scan as many as you like.</div>
+      </div>
+
+      <!-- add new / unknown customer -->
+      <div class="overlay" id="newOv">
+        <div class="scrim" onclick="closeNew()"></div>
+        <div class="modal left">
+          <h3 id="newTitle">New customer</h3>
+          <p>Not in the database — add it now; the office verifies it later.</p>
+          <label class="f">Company name</label>
+          <input class="field" id="nwName" style="margin-bottom:9px">
+          <div class="row" style="margin-bottom:9px">
+            <div><label class="f">Code</label><input class="field" id="nwCode" placeholder="AUTO"></div>
+            <div><label class="f">Phone</label><input class="field" id="nwPhone" inputmode="tel" placeholder="Optional"></div>
+          </div>
+          <label class="f">Email</label>
+          <input class="field" id="nwEmail" placeholder="Optional" style="margin-bottom:14px">
+          <button class="mbtn" onclick="saveNew()">Add &amp; continue</button>
+        </div>
+      </div>
+
+      <!-- submitted + print center (stays open for multiple prints) -->
+      <div class="overlay" id="okOv">
+        <div class="scrim"></div>
+        <div class="modal left">
+          <div class="ic" style="background:#e3f6ea;color:var(--ok)">✓</div>
+          <h3>Receipt submitted</h3>
+          <p><b id="okWr">—</b> synced to Bubble.io.</p>
+          <label class="f">Labels to print — 1 per piece</label>
+          <div class="stepper" style="margin-bottom:5px">
+            <button onclick="lblStep(-1)">−</button>
+            <input id="lblCount" inputmode="numeric" value="1" oninput="syncLblNote()">
+            <button onclick="lblStep(1)">+</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:11px">Total pieces across all cargo lines: <b id="lblTotal">1</b>.</div>
+          <div class="lblnote" id="lblNote"></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:9px">Each print — count and any difference reason — is saved back to this receipt on Bubble.</div>
+          <button class="mbtn" style="background:var(--orange)" onclick="openConfirm()">🖨 Print <span id="lblN">1</span> label(s) to ZQ511</button>
+          <div class="plog" id="printLog"></div>
+          <button class="mbtn" style="background:var(--ok);margin-top:8px" onclick="resetAll()">New receipt</button>
+        </div>
+      </div>
+
+      <!-- print confirmation -->
+      <div class="overlay" id="confirmOv" style="z-index:45">
+        <div class="scrim" onclick="closeConfirm()"></div>
+        <div class="modal left">
+          <h3>Confirm label print</h3>
+          <div class="label3x2">
+            <div class="lh">LCL OCEAN SERVICES · WAREHOUSE RECEIPT</div>
+            <div class="lwr" id="pvWr">—</div>
+            <div class="lbar"></div>
+            <div class="lbarn" id="pvWrB">—</div>
+            <div class="lcon">TO: <b id="pvCon">—</b></div>
+            <div class="lpc">Piece <span id="pvPc">1</span> of <span id="pvN">1</span></div>
+          </div>
+          <div class="lblcap">3″ × 2″ label · ZQ511</div>
+          <div class="cfrow"><span>Pieces recorded</span><b id="cfPieces">0</b></div>
+          <div class="cfrow"><span>Labels to print</span><b id="cfLabels">0</b></div>
+          <div class="cfdelta" id="cfDelta"></div>
+          <div id="cfReasonWrap" style="display:none;margin-top:12px">
+            <label class="f">Reason labels ≠ pieces <span class="req">*</span></label>
+            <div class="chips" id="cfReasons">
+              <div class="chip" data-r="Pallet broken down into more pieces">Broken down</div>
+              <div class="chip" data-r="Pieces consolidated into fewer pallets">Consolidated</div>
+              <div class="chip" data-r="Other">Other</div>
+            </div>
+          </div>
+          <button class="mbtn" style="background:var(--orange);margin-top:14px" onclick="doPrint()">🖨 Confirm &amp; print <span id="cfN">1</span></button>
+          <button class="mbtn" style="background:#fff;border:1.5px solid var(--line);color:var(--muted);margin-top:8px" onclick="closeConfirm()">Cancel</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+    </div>
+    <div class="gun"></div>
+  </div>
+</div>
+
+<div class="note">
+  <h2>Scan-first layout</h2>
+  <p>Same data as the form version, but ordered the way a receiver actually works a truck — and broken into quick steps instead of one long scroll.</p>
+  <ul>
+    <li><b>Step 1 Scan</b> — big scan target first; capture every tracking # in seconds.</li>
+    <li><b>Step 2 Parties</b> — shipper (searches shippers, try "Nike") and consignee (searches customers). Receipt # appears the moment a consignee is picked.</li>
+    <li><b>Step 3 Cargo</b> — big steppers and dropdowns, almost no typing.</li>
+    <li><b>Step 4 Condition &amp; items</b> — Short / Damaged, plus the Inventory tool: capture each item and it auto-fills the description.</li>
+    <li><b>Step 5 Review &amp; sign</b> — summary, WH LOC, Notes (auto-filled from captured items), signature if needed, then submit. The print panel stays open so you can print labels (1 per piece, editable) as many times as you want before starting a New receipt.</li>
+  </ul>
+  <h2>Why this is more ergonomic</h2>
+  <ul>
+    <li>Online/sync status lives in the top bar (built for <b>offline-first</b> queuing).</li>
+    <li>Big touch targets for gloves; steppers/toggles over the keyboard.</li>
+    <li><b>Next</b> stays disabled until the step's required field is done, so a half receipt can't be submitted.</li>
+  </ul>
+</div>
+
+<!-- REAL PRINTING ON THE TC22:
+     1) Install the "Zebra Browser Print" app on the device and run its service.
+     2) Put BrowserPrint-3.x.min.js (from Zebra) in this folder and uncomment the line below.
+     3) Pair the ZQ511 over Bluetooth Classic. Confirm + print will then send live labels.
+<script src="BrowserPrint-3.1.250.min.js"></script>
+-->
+<script>
+  var CUSTOMERS=[
+    {n:"Sports Center",c:"SC"},{n:"21st Century Hardware",c:"TCH"},{n:"2577 Management Ltd",c:"2ML"},
+    {n:"3D Construction",c:"3DC"},{n:"3S Bakery",c:"3SB"},{n:"48hrs imports",c:"48I"},
+    {n:"A & A Wholesale",c:"AAW"},{n:"Abaco Kitchen",c:"ABK"},{n:"Rubins Department Store",c:"RDS"}
+  ];
+  var SHIPPERS=[
+    {n:"Nike",c:"NKE"},{n:"Puma",c:"PMA"},{n:"Luxottica",c:"LUX"},{n:"Amazon",c:"AMZ"},
+    {n:"ThredUp",c:"TUP"},{n:"Scales",c:"SCL"},{n:"JDS",c:"JDS"},{n:"Wona Trading",c:"WON"}
+  ];
+
+  var STEPS=[
+    {t:"Scan freight",s:"Scan each tracking label as it comes off the truck."},
+    {t:"Shipper & consignee",s:"Who sent it, and who it's for."},
+    {t:"Cargo details",s:"Count, packaging, weight and size."},
+    {t:"Condition & photos",s:"Flag any issues and capture proof."},
+    {t:"Review & sign",s:"Confirm, capture signature, submit."}
+  ];
+  var cur=0, SEQ=1000, YEAR=new Date().getFullYear(), conCode='', conName='', shipName='', trks=[];
+
+  /* build progress bars */
+  var bars=document.getElementById('bars');
+  STEPS.forEach(function(_,i){var d=document.createElement('div');d.className='s';bars.appendChild(d);});
+
+  function render(){
+    document.querySelectorAll('.step').forEach(function(el){el.classList.toggle('show',+el.dataset.step===cur);});
+    [].forEach.call(bars.children,function(b,i){b.className='s'+(i<cur?' done':'')+(i===cur?' cur':'');});
+    document.getElementById('stTitle').textContent=STEPS[cur].t;
+    document.getElementById('stSub').textContent=STEPS[cur].s;
+    document.getElementById('bBack').disabled=(cur===0);
+    var last=(cur===STEPS.length-1);
+    document.getElementById('bNext').style.display=last?'none':'block';
+    document.getElementById('bSubmit').style.display=last?'block':'none';
+    if(last) fillSummary();
+    updateNext();
+  }
+  function updateNext(){
+    var ok=true, miss=[];
+    if(cur===0){ if(trks.length===0){ok=false;miss.push('scan a tracking #');} }
+    if(cur===1){
+      if(!document.getElementById('shipper').value.trim()){ok=false;miss.push('shipper');}
+      if(!conCode){ok=false;miss.push('consignee');}
+    }
+    if(cur===2){
+      var lines=document.querySelectorAll('#v2cargo .cline'), bad=false;
+      lines.forEach(function(c){
+        if(!c.querySelector('.cl-pkg').value){bad=true;}
+        if(!c.querySelector('.cl-wt').value.trim()){bad=true;}
+        if(!c.querySelector('.cl-dim').value.trim()){bad=true;}
+      });
+      if(lines.length===0||bad){ok=false;miss.push('package, weight & dims on every cargo line');}
+    }
+    document.getElementById('bNext').disabled=!ok;
+    var rh=document.getElementById('reqHint');
+    if(ok){rh.style.display='none';rh.textContent='';}
+    else{rh.style.display='block';rh.textContent='Required: '+miss.join(', ');}
+  }
+  function go(d){
+    if(d>0 && document.getElementById('bNext').disabled) return;
+    cur=Math.max(0,Math.min(STEPS.length-1,cur+d));render();
+  }
+
+  /* scanning */
+  function openScan(){document.getElementById('scanview').classList.add('show');
+    setTimeout(function(){
+      var v='1Z'+Math.floor(100000000+Math.random()*899999999);
+      trks.push(v);renderTrks();closeScan();toast('Scanned '+v);updateNext();
+    },1300);
+  }
+  function closeScan(){document.getElementById('scanview').classList.remove('show');}
+  function renderTrks(){
+    var box=document.getElementById('scanned');box.innerHTML='';
+    trks.forEach(function(v,i){
+      var r=document.createElement('div');r.className='trk';
+      r.innerHTML='<div class="tag">'+(i+1)+'</div><div class="v">'+v+'</div>';
+      var x=document.createElement('button');x.className='x';x.textContent='✕';
+      x.onclick=function(){trks.splice(i,1);renderTrks();updateNext();};
+      r.appendChild(x);box.appendChild(r);
+    });
+  }
+
+  /* autocomplete */
+  function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+  function acFilter(id){
+    var inp=document.getElementById(id),box=document.getElementById(id+'-list');
+    var src=(id==='shipper')?SHIPPERS:CUSTOMERS;
+    var q=inp.value.trim().toLowerCase();
+    var m=src.filter(function(c){return c.n.toLowerCase().indexOf(q)>-1;}).slice(0,8);
+    box.innerHTML='';
+    m.forEach(function(c){
+      var it=document.createElement('div');it.className='ac-item';
+      it.innerHTML=(q?c.n.replace(new RegExp('('+esc(q)+')','i'),'<span class="hl">$1</span>'):c.n)+'<small>Code '+c.c+'</small>';
+      it.addEventListener('mousedown',function(e){e.preventDefault();acPick(id,c.n,c.c);});
+      box.appendChild(it);
+    });
+    if(q && !m.some(function(c){return c.n.toLowerCase()===q;})){
+      var nw=document.createElement('div');nw.className='ac-new';nw.textContent='＋ Add new "'+inp.value+'"';
+      nw.addEventListener('mousedown',function(e){e.preventDefault();acNew(id);});box.appendChild(nw);
+    }
+    box.classList.toggle('show',box.children.length>0 && document.activeElement===inp);
+  }
+  function acPick(id,name,code){
+    document.getElementById(id).value=name;document.getElementById(id+'-list').classList.remove('show');
+    document.getElementById(id+'-new').style.display='none';
+    if(id==='shipper') shipName=name;
+    if(id==='consignee'){conCode=code;conName=name;setRx();}
+    updateNext();
+  }
+
+  /* ---- new / unknown customer flow ---- */
+  var pendField=null;
+  function acNew(id){
+    document.getElementById(id+'-list').classList.remove('show');
+    pendField=id;
+    var typed=document.getElementById(id).value.trim();
+    document.getElementById('newTitle').textContent=(id==='shipper')?'New shipper':'New customer';
+    document.getElementById('nwName').value=typed;
+    document.getElementById('nwCode').value=initials(typed);
+    document.getElementById('nwPhone').value='';document.getElementById('nwEmail').value='';
+    document.getElementById('newOv').classList.add('show');
+  }
+  function closeNew(){document.getElementById('newOv').classList.remove('show');}
+  function saveNew(){
+    var id=pendField;
+    var name=document.getElementById('nwName').value.trim()||'New entry';
+    var code=(document.getElementById('nwCode').value.trim()||initials(name)).toUpperCase();
+    var rec={n:name,c:code,isNew:true};
+    if(id==='shipper') SHIPPERS.unshift(rec); else CUSTOMERS.unshift(rec);
+    document.getElementById(id).value=name;
+    document.getElementById(id+'-new').style.display='block';
+    if(id==='shipper') shipName=name;
+    if(id==='consignee'){conCode=code;conName=name;setRx();}
+    closeNew();updateNext();
+    toast('New '+(id==='shipper'?'shipper':'customer')+' added — flagged for verification');
+  }
+  function initials(n){var p=n.replace(/[^A-Za-z0-9 ]/g,'').trim().split(/\s+/).filter(Boolean);
+    return (p.map(function(w){return w[0];}).join('').slice(0,3)||'CUS').toUpperCase();}
+  function setRx(){
+    var num=conCode+'-'+SEQ+'-'+YEAR;
+    var b=document.getElementById('rxbox');b.classList.remove('empty');document.getElementById('rxNum').textContent=num;
+    document.getElementById('rxTag').textContent=num;
+  }
+  document.addEventListener('click',function(e){if(!e.target.closest('.ac'))document.querySelectorAll('.ac-list').forEach(function(l){l.classList.remove('show');});});
+
+  /* dimension auto-× : recompute from the numbers each time (idempotent) */
+  function fmtDims(el){
+    var raw=el.value;
+    var trailing=/[\s,xX*×\-]$/.test(raw);            // user just typed a separator
+    var nums=raw.replace(/[xX*×,\-]/g,' ').split(/\s+/).filter(Boolean);
+    var out=nums.join(' × ');
+    if(trailing && nums.length>0 && nums.length<3) out+=' × ';
+    el.value=out;
+  }
+
+  /* stepper that targets the input inside its own .stepper */
+  function lstep(btn,n){var i=btn.parentNode.querySelector('input');i.value=Math.max(1,(parseInt(i.value)||1)+n);}
+
+  /* ---- collapsible cargo lines ---- */
+  var lineNo=0;
+  function addV2Cargo(){
+    document.querySelectorAll('#v2cargo .cline').forEach(function(c){setOpen(c,false);});
+    lineNo++;
+    var d=document.createElement('div');d.className='cline open';
+    d.innerHTML=
+      '<div class="clhead" onclick="toggleLine(this.parentNode)">'+
+        '<div class="cltitle">Line '+lineNo+'</div>'+
+        '<div class="clsum">tap to edit</div>'+
+        '<div class="clchev">▾</div>'+
+        '<button class="clx" onclick="event.stopPropagation();removeLine(this)">✕</button>'+
+      '</div>'+
+      '<div class="clbody">'+
+        '<label class="f">Pieces</label>'+
+        '<div class="stepper" style="margin-bottom:12px"><button onclick="lstep(this,-1)">−</button><input class="cl-pcs" value="1" inputmode="numeric"><button onclick="lstep(this,1)">+</button></div>'+
+        '<label class="f">Package type <span class="req">*</span></label>'+
+        '<select class="field cl-pkg" style="margin-bottom:12px" onchange="updateNext()"><option>Pallet</option><option>Carton</option><option>Crate</option><option>Drum</option><option>Loose</option></select>'+
+        '<div class="row"><div><label class="f">Weight (lb) <span class="req">*</span></label><input class="field cl-wt" inputmode="decimal" placeholder="0" oninput="updateNext()"></div>'+
+          '<div><label class="f">Dims (in) <span class="req">*</span></label><input class="field cl-dim" inputmode="decimal" placeholder="L × W × H" oninput="fmtDims(this);updateNext()"></div></div>'+
+        '<label class="f">Repack — pieces/pallets changed? <span style="color:var(--muted);font-weight:400">(optional)</span></label>'+
+        '<div class="repack">'+
+          '<div class="rprow">'+
+            '<input class="field rp-num rp-from-n" inputmode="numeric" placeholder="#">'+
+            '<select class="field rp-u rp-from-u"><option>plts</option><option>pcs</option></select>'+
+            '<select class="field rp-act"><option value="">— action —</option><option>Consolidated</option><option>Broken down</option></select>'+
+          '</div>'+
+          '<div class="rprow">'+
+            '<span class="rp-arrow">into</span>'+
+            '<input class="field rp-num rp-to-n" inputmode="numeric" placeholder="#">'+
+            '<select class="field rp-u rp-to-u"><option>pcs</option><option>plts</option></select>'+
+          '</div>'+
+        '</div>'+
+        '<label class="f">Qty at these dims</label>'+
+        '<div class="stepper mb0"><button onclick="lstep(this,-1)">−</button><input class="cl-qty" value="1" inputmode="numeric"><button onclick="lstep(this,1)">+</button></div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:6px">Use when several pieces share the same dimensions (e.g. 10 identical cartons).</div>'+
+      '</div>';
+    document.getElementById('v2cargo').appendChild(d);
+  }
+  function toggleLine(card){setOpen(card,!card.classList.contains('open'));}
+  function setOpen(card,open){
+    if(open){card.classList.add('open');}
+    else{card.classList.remove('open');card.querySelector('.clsum').textContent=lineSummary(card);}
+  }
+  function lineSummary(card){
+    var pcs=card.querySelector('.cl-pcs').value||'1';
+    var pkg=card.querySelector('.cl-pkg').value;
+    var wt=card.querySelector('.cl-wt').value;
+    var dim=card.querySelector('.cl-dim').value;
+    var qty=parseInt(card.querySelector('.cl-qty').value)||1;
+    var s='Pcs '+pcs+' · '+pkg;
+    if(wt) s+=' · '+wt+' lb';
+    if(dim) s+=' · '+dim;
+    if(qty>1) s+=' · ×'+qty;
+    var rp=repackText(card); if(rp) s+=' · '+rp;
+    return s;
+  }
+  function removeLine(btn){
+    var card=btn.closest('.cline');card.remove();
+    if(!document.querySelectorAll('#v2cargo .cline').length) addV2Cargo();
+  }
+
+  /* ---- Inventory app integration (simulated identification) ---- */
+  var INV=[
+    "Nike Air Max 270 — running shoe, blk/wht, 12-pair case",
+    "Ray-Ban Wayfarer RB2140 — sunglasses, tortoise, qty 24",
+    "Puma Essentials hoodie — grey, size L, 20-pc carton",
+    "Luxottica optical frames — assorted, 30-pc tray",
+    "Amazon Basics HDMI cable 6ft — 50-pc box",
+    "ThredUp mixed apparel — women's, bulk bag",
+    "Nike crew socks — 3-pack, 48 units",
+    "Oakley Holbrook sunglasses — matte black, qty 18"
+  ];
+  var invI=0, items=[];
+  function captureItem(){
+    toast('Identifying item…');
+    setTimeout(function(){ items.push(INV[invI % INV.length]); invI++; renderItems(); toast('Item identified ✓'); },1100);
+  }
+  function renderItems(){
+    var box=document.getElementById('items'); box.innerHTML='';
+    items.forEach(function(d,i){
+      var row=document.createElement('div'); row.className='item';
+      var th=document.createElement('div'); th.className='ithumb'; th.textContent='IMG_'+(i+1);
+      var inp=document.createElement('input'); inp.className='idesc'; inp.value=d;
+      inp.addEventListener('input',function(){items[i]=inp.value;});
+      var x=document.createElement('button'); x.className='ix'; x.textContent='✕';
+      x.addEventListener('click',function(){items.splice(i,1);renderItems();});
+      row.appendChild(th);row.appendChild(inp);row.appendChild(x);box.appendChild(row);
+    });
+  }
+
+  function fillSummary(){
+    document.getElementById('rxNum2').textContent=conCode?conCode+'-'+SEQ+'-'+YEAR:'—';
+    document.getElementById('sShip').textContent=shipName||'—';
+    document.getElementById('sCon').textContent=conName||'—';
+    document.getElementById('sTrk').textContent=trks.length;
+    var lines=document.querySelectorAll('#v2cargo .cline');
+    var pcs=0;document.querySelectorAll('#v2cargo .cl-pcs').forEach(function(i){pcs+=parseInt(i.value)||0;});
+    document.getElementById('sLines').textContent=lines.length;
+    document.getElementById('sPcs').textContent=pcs;
+    // compose Notes: repack statements per line + captured item descriptions
+    var parts=[];
+    var rp=[];
+    document.querySelectorAll('#v2cargo .cline').forEach(function(c,idx){
+      var s=repackText(c); if(s) rp.push('Line '+(idx+1)+': '+s);
+    });
+    if(rp.length) parts.push(rp.join('\n'));
+    if(items.length) parts.push(items.map(function(d){return '• '+d;}).join('\n'));
+    if(parts.length) document.getElementById('notes').value=parts.join('\n');
+  }
+  function repackText(card){
+    var act=card.querySelector('.rp-act').value;
+    var fn=card.querySelector('.rp-from-n').value.trim();
+    var tn=card.querySelector('.rp-to-n').value.trim();
+    if(!act||!fn||!tn) return '';
+    return fn+' '+card.querySelector('.rp-from-u').value+' '+act.toLowerCase()+' into '+tn+' '+card.querySelector('.rp-to-u').value;
+  }
+  function totalPieces(){var p=0;document.querySelectorAll('#v2cargo .cl-pcs').forEach(function(i){p+=parseInt(i.value)||0;});return Math.max(1,p);}
+  function submit(){
+    document.getElementById('okWr').textContent=conCode+'-'+SEQ+'-'+YEAR;
+    var pcs=totalPieces();
+    document.getElementById('lblTotal').textContent=pcs;
+    document.getElementById('lblCount').value=pcs;
+    document.getElementById('printLog').innerHTML='';
+    syncLblNote();
+    document.getElementById('okOv').classList.add('show');
+  }
+  function lblCountVal(){return Math.max(1,parseInt(document.getElementById('lblCount').value)||1);}
+  function lblStep(n){document.getElementById('lblCount').value=Math.max(1,(parseInt(document.getElementById('lblCount').value)||1)+n);syncLblNote();}
+  function matchPieces(){document.getElementById('lblCount').value=document.getElementById('lblTotal').textContent;syncLblNote();}
+  function syncLblNote(){
+    var n=parseInt(document.getElementById('lblCount').value)||0;
+    document.getElementById('lblN').textContent=n;
+    var p=parseInt(document.getElementById('lblTotal').textContent)||0;
+    var note=document.getElementById('lblNote');
+    if(n!==p && n>0){
+      var d=n-p, dir=d>0?('＋'+d+' more than'):('−'+(-d)+' fewer than');
+      note.className='lblnote show';
+      note.innerHTML='⚠ <b>'+n+' labels</b> — '+dir+' the <b>'+p+' pieces</b> recorded. Expected if the pallet was broken down into more pieces, or pieces were consolidated into fewer. '+
+        '<button class="matchbtn" onclick="matchPieces()">Match piece count ('+p+')</button>';
+    } else { note.className='lblnote'; note.innerHTML=''; }
+  }
+
+  /* ---- ZQ511 label: 3" x 2" @ 203dpi (609 x 406 dots) ---- */
+  function buildZPL(wr,consignee,i,n){
+    var c=(consignee||'').replace(/[\^~]/g,' ').substring(0,28);
+    return '^XA^CI28^PW609^LL406'+
+      '^CF0,30^FO24,20^FDLCL OCEAN SERVICES^FS'+
+      '^FO20,56^GB569,3,3^FS'+
+      '^CF0,24^FO24,64^FDWAREHOUSE RECEIPT^FS'+
+      '^CF0,56^FO24,96^FD'+wr+'^FS'+
+      '^BY2,2.0,80^FO24,162^BCN,80,N,N,N^FD'+wr+'^FS'+
+      '^CF0,24^FO24,256^FDTO:^FS'+
+      '^CF0,30^FO74,252^FD'+c+'^FS'+
+      '^CF0,44^FO24,320^FDPiece '+i+' of '+n+'^FS'+
+      '^XZ';
+  }
+  /* Zebra Browser Print (feature-detected; printing simulated if absent) */
+  function initPrinter(){
+    if(typeof BrowserPrint==='undefined') return;
+    try{ BrowserPrint.getDefaultDevice('printer', function(d){window.__zebra=d;}, function(){}); }catch(e){}
+  }
+
+  /* confirmation before printing */
+  var cfReason='';
+  function openConfirm(){
+    var n=lblCountVal(), p=parseInt(document.getElementById('lblTotal').textContent)||0;
+    document.getElementById('cfPieces').textContent=p;
+    document.getElementById('cfLabels').textContent=n;
+    document.getElementById('cfN').textContent=n;
+    var wr=document.getElementById('okWr').textContent;
+    var con=conName||document.getElementById('consignee').value||'—';
+    document.getElementById('pvWr').textContent=wr;
+    document.getElementById('pvWrB').textContent=wr;
+    document.getElementById('pvCon').textContent=con;
+    document.getElementById('pvN').textContent=n;
+    document.getElementById('pvPc').textContent='1';
+    var delta=document.getElementById('cfDelta'), wrap=document.getElementById('cfReasonWrap');
+    cfReason='';
+    document.querySelectorAll('#cfReasons .chip').forEach(function(c){c.classList.remove('on');});
+    if(n===p){
+      delta.className='cfdelta match';delta.textContent='✓ Labels match the recorded piece count of '+p+'.';
+      wrap.style.display='none';
+    } else {
+      var d=n-p;
+      delta.className='cfdelta diff';
+      delta.textContent='⚠ Printing '+n+' labels for '+p+' recorded pieces ('+(d>0?'+':'')+d+'). Confirm this is intended and choose a reason.';
+      wrap.style.display='block';
+      var suggest=d>0?'Pallet broken down into more pieces':'Pieces consolidated into fewer pallets';
+      document.querySelectorAll('#cfReasons .chip').forEach(function(c){if(c.dataset.r===suggest){c.classList.add('on');cfReason=suggest;}});
+    }
+    document.getElementById('confirmOv').classList.add('show');
+  }
+  function closeConfirm(){document.getElementById('confirmOv').classList.remove('show');}
+  function doPrint(){
+    var n=lblCountVal(), p=parseInt(document.getElementById('lblTotal').textContent)||0;
+    if(n!==p && !cfReason){toast('Pick a reason for the difference');return;}
+    // build + send one 3x2 label per piece (1 of n, 2 of n, …)
+    var wr=document.getElementById('okWr').textContent;
+    var con=conName||document.getElementById('consignee').value||'';
+    var real=false;
+    if(window.__zebra){
+      try{ for(var i=1;i<=n;i++){ window.__zebra.send(buildZPL(wr,con,i,n), null, null); } real=true; }catch(e){ real=false; }
+    }
+    closeConfirm();
+    var t=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    var detail=(n!==p?(' — '+cfReason):'');
+    // record onto the receipt (the app PATCHes this back to the Bubble WR record)
+    var notes=document.getElementById('notes');
+    notes.value+=(notes.value?'\n':'')+'Labels printed: '+n+' (pieces recorded: '+p+')'+detail;
+    var row=document.createElement('div');
+    row.textContent='✓ Printed '+n+' label'+(n>1?'s':'')+' at '+t+detail+' · saved to WR';
+    document.getElementById('printLog').appendChild(row);
+    toast(real? ('Sent '+n+' label'+(n>1?'s':'')+' to ZQ511 🖨') : ('Simulated '+n+' label'+(n>1?'s':'')+' (Browser Print not detected)'));
+  }
+  document.querySelectorAll('#cfReasons .chip').forEach(function(c){
+    c.addEventListener('click',function(){
+      document.querySelectorAll('#cfReasons .chip').forEach(function(x){x.classList.remove('on');});
+      c.classList.add('on');cfReason=c.dataset.r;
+    });
+  });
+  function resetAll(){
+    document.getElementById('okOv').classList.remove('show');
+    document.getElementById('confirmOv').classList.remove('show');
+    document.getElementById('printLog').innerHTML='';
+    SEQ++;cur=0;conCode='';conName='';shipName='';trks=[];
+    document.getElementById('shipper').value='';document.getElementById('consignee').value='';
+    document.getElementById('shipper-new').style.display='none';document.getElementById('consignee-new').style.display='none';
+    document.getElementById('v2cargo').innerHTML='';lineNo=0;addV2Cargo();
+    items=[];invI=0;renderItems();document.getElementById('notes').value='';
+    document.querySelectorAll('.chip.on').forEach(function(c){c.classList.remove('on');});
+    var b=document.getElementById('rxbox');b.classList.add('empty');document.getElementById('rxNum').textContent='Select consignee';
+    document.getElementById('rxTag').textContent='New intake';
+    renderTrks();render();toast('Ready for next receipt');
+  }
+
+  var tT;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show')},1700);}
+
+  addV2Cargo();
+  render();
+  initPrinter();
+</script>

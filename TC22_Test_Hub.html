@@ -1,0 +1,78 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0e12">
+<title>LCL Warehouse Test Hub</title>
+<style>
+  :root{--teal:#33b6c2;--teal-d:#1f8d98;--orange:#e87440;--ink:#1c2330;--muted:#9fb0c0;--line:#26323f}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{background:#0b0e12;color:#fff;font-family:"Segoe UI",Roboto,system-ui,sans-serif;
+        display:flex;justify-content:center}
+  .wrap{width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;padding:22px 18px 26px}
+  .top{padding:8px 4px 4px;display:flex;align-items:center;justify-content:center}
+  .top svg{height:48px;width:auto;display:block}
+  h1{font-size:19px;text-align:center;margin:18px 0 2px}
+  .sub{text-align:center;color:var(--muted);font-size:12px;margin:0 0 22px}
+  .sub .dot{color:var(--orange)}
+
+  .tiles{display:flex;flex-direction:column;gap:14px}
+  .tile{display:flex;align-items:center;gap:15px;text-decoration:none;color:#fff;
+        background:#161b22;border:1px solid var(--line);border-radius:16px;padding:18px 17px}
+  .tile:active{transform:translateY(1px)}
+  .tile .ic{width:52px;height:52px;border-radius:13px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:25px}
+  .tile .ic.t{background:rgba(51,182,194,.16);color:var(--teal)}
+  .tile .ic.o{background:rgba(232,116,64,.16);color:var(--orange)}
+  .tile .tx{flex:1}
+  .tile .tx b{font-size:16px;display:block}
+  .tile .tx span{font-size:12px;color:var(--muted)}
+  .tile .go{color:var(--muted);font-size:20px}
+  .tile.primary{border-color:var(--teal);background:#13212a}
+  .tile.ghost{background:transparent;border-style:dashed;opacity:.85}
+
+  .hint{margin-top:auto;padding-top:22px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.6}
+  .badge{display:inline-block;background:#161b22;border:1px solid var(--line);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--muted);margin-bottom:14px;align-self:center}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <svg viewBox="0 0 624 150" xmlns="http://www.w3.org/2000/svg" aria-label="LCL Ocean Services">
+      <rect x="8" y="14" width="42" height="48" rx="13" fill="#33b6c2"/>
+      <polygon points="124,12 124,98 54,55" fill="#33b6c2"/>
+      <path d="M8,108 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>
+      <path d="M8,130 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>
+      <text x="138" y="118" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="104" fill="#33b6c2">LCL</text>
+      <text x="350" y="66" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="54" fill="#33b6c2">OCEAN</text>
+      <text x="350" y="120" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="47" fill="#e87440">SERVICES</text>
+    </svg>
+  </div>
+  <h1>Warehouse Test Hub</h1>
+  <p class="sub"><span class="dot">●</span> TC22 / ZQ511 test build</p>
+
+  <div class="tiles">
+    <a class="tile primary" href="TC22_Warehouse_Receipt_ScanFirst.html">
+      <div class="ic t">▦</div>
+      <div class="tx"><b>Warehouse Receipt</b><span>Scan-first intake → Bubble</span></div>
+      <div class="go">›</div>
+    </a>
+
+    <a class="tile" href="TC22_Inventory_Test.html">
+      <div class="ic o">📦</div>
+      <div class="tx"><b>Inventory</b><span>Capture &amp; look up items</span></div>
+      <div class="go">›</div>
+    </a>
+
+    <a class="tile ghost" href="TC22_Warehouse_Receipt_Mockup.html">
+      <div class="ic t">▤</div>
+      <div class="tx"><b>Receipt — form layout</b><span>Alternate single-scroll version</span></div>
+      <div class="go">›</div>
+    </a>
+  </div>
+
+  <p class="hint">
+    Open in Chrome on the TC22, then <b>⋮ → Add to Home screen</b> for a full-screen app icon.<br>
+    Test build — data is simulated, not yet connected to the live site.
+  </p>
+</div>
