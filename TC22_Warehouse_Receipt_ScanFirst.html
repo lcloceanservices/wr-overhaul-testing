@@ -301,6 +301,7 @@
             <div class="chips" style="margin-bottom:0">
               <div class="chip" onclick="this.classList.toggle('on')">Short</div>
               <div class="chip" onclick="this.classList.toggle('on')">Damaged</div>
+              <div class="chip" onclick="this.classList.toggle('on')">Hazmat</div>
             </div>
           </div>
           <div class="card">
@@ -322,8 +323,10 @@
             <div class="sumrow"><span>Total pieces</span><b id="sPcs">1</b></div>
           </div>
           <div class="card">
+            <label class="f">Received by — signed in</label>
+            <input class="field" id="recvBy" readonly style="margin-bottom:13px;background:#f4f6f9;color:var(--muted)">
             <label class="f">WH LOC</label>
-            <input class="field" placeholder="e.g. A-12" style="margin-bottom:13px">
+            <input class="field" id="whLoc" placeholder="e.g. A-12" style="margin-bottom:13px">
             <label class="f">Notes <span class="invbadge">AUTO-FILLED FROM ITEMS</span></label>
             <textarea class="field mb0" id="notes" rows="5" placeholder="Item descriptions captured by Inventory appear here…"></textarea>
           </div>
@@ -475,7 +478,15 @@
     {t:"Condition & photos",s:"Flag any issues and capture proof."},
     {t:"Review & sign",s:"Confirm, capture signature, submit."}
   ];
-  var cur=0, SEQ=1000, YEAR=new Date().getFullYear(), conCode='', conName='', shipName='', trks=[];
+  var cur=0, YEAR=new Date().getFullYear(), conCode='', conName='', shipName='', trks=[], curWrNum=1000;
+  /* per-customer WR# sequence (persists in this browser): each customer's number goes up by 1 each receipt */
+  function loadSeq(){try{return JSON.parse(localStorage.getItem('lcl_wr_seq')||'{}');}catch(e){return {};}}
+  function nextWrNum(code){var m=loadSeq();return (m[code]!=null?m[code]+1:1000);}
+  function bumpSeq(code,num){var m=loadSeq();m[code]=num;try{localStorage.setItem('lcl_wr_seq',JSON.stringify(m));}catch(e){}}
+  function wrNum(){return conCode+'-'+curWrNum+'-'+YEAR;}
+  /* signed-in warehouse user (auto-fills "Received by"). Stand-in for real login. */
+  var WAREHOUSE_USER='M. Rolle';
+  try{WAREHOUSE_USER=localStorage.getItem('lcl_wh_user')||WAREHOUSE_USER;}catch(e){}
 
   /* build progress bars */
   var bars=document.getElementById('bars');
@@ -595,7 +606,8 @@
   function initials(n){var p=n.replace(/[^A-Za-z0-9 ]/g,'').trim().split(/\s+/).filter(Boolean);
     return (p.map(function(w){return w[0];}).join('').slice(0,3)||'CUS').toUpperCase();}
   function setRx(){
-    var num=conCode+'-'+SEQ+'-'+YEAR;
+    curWrNum=nextWrNum(conCode);
+    var num=wrNum();
     var b=document.getElementById('rxbox');b.classList.remove('empty');document.getElementById('rxNum').textContent=num;
     document.getElementById('rxTag').textContent=num;
   }
@@ -706,7 +718,7 @@
   }
 
   function fillSummary(){
-    document.getElementById('rxNum2').textContent=conCode?conCode+'-'+SEQ+'-'+YEAR:'—';
+    document.getElementById('rxNum2').textContent=conCode?wrNum():'—';
     document.getElementById('sShip').textContent=shipName||'—';
     document.getElementById('sCon').textContent=conName||'—';
     document.getElementById('sTrk').textContent=trks.length;
@@ -732,8 +744,33 @@
     return fn+' '+card.querySelector('.rp-from-u').value+' '+act.toLowerCase()+' into '+tn+' '+card.querySelector('.rp-to-u').value;
   }
   function totalPieces(){var p=0;document.querySelectorAll('#v2cargo .cl-pcs').forEach(function(i){p+=parseInt(i.value)||0;});return Math.max(1,p);}
+  /* push this receipt to the office "stack" (stand-in for the Bubble inventory site) */
+  function pushToStack(){
+    try{
+      var dims=[],wt=0,cargo=[];
+      document.querySelectorAll('#v2cargo .cline').forEach(function(c){
+        wt+=parseFloat(c.querySelector('.cl-wt').value)||0;
+        var dimStr=(c.querySelector('.cl-dim').value||'');
+        var dm=dimStr.split(/[×xX*]/).map(function(s){return parseFloat(s)||0;});
+        dims.push({l:dm[0]||0,w:dm[1]||0,h:dm[2]||0,qty:parseInt(c.querySelector('.cl-qty').value)||1});
+        cargo.push({pcs:(c.querySelector('.cl-pcs').value||''),pkg:(c.querySelector('.cl-pkg').value||''),weight:(c.querySelector('.cl-wt').value||''),dim:dimStr});
+      });
+      var flags=[];document.querySelectorAll('.chip.on').forEach(function(c){flags.push(c.textContent.trim());});
+      var rec={wr:wrNum(),date:new Date().toLocaleDateString(),customer:conName,supplier:shipName,
+        pcs:totalPieces(),plts:0,weight:wt,dims:dims,cargo:cargo,tracking:trks.slice(),items:items.slice(),
+        receivedBy:(document.getElementById('recvBy')?document.getElementById('recvBy').value.trim():'')||'Warehouse',
+        whLoc:(document.getElementById('whLoc')?document.getElementById('whLoc').value.trim():''),
+        flags:flags, notes:(document.getElementById('notes')?document.getElementById('notes').value:''),
+        status:'Pending',source:'scanner'};
+      var arr=[];try{arr=JSON.parse(localStorage.getItem('lcl_wr_stack')||'[]');}catch(e){arr=[];}
+      arr.unshift(rec);
+      localStorage.setItem('lcl_wr_stack',JSON.stringify(arr));
+    }catch(e){}
+  }
   function submit(){
-    document.getElementById('okWr').textContent=conCode+'-'+SEQ+'-'+YEAR;
+    document.getElementById('okWr').textContent=wrNum();
+    pushToStack();
+    bumpSeq(conCode,curWrNum);
     var pcs=totalPieces();
     document.getElementById('lblTotal').textContent=pcs;
     document.getElementById('lblCount').value=pcs;
@@ -866,11 +903,12 @@
     document.getElementById('okOv').classList.remove('show');
     document.getElementById('confirmOv').classList.remove('show');
     document.getElementById('printLog').innerHTML='';
-    SEQ++;cur=0;conCode='';conName='';shipName='';trks=[];
+    cur=0;conCode='';conName='';shipName='';trks=[];
     document.getElementById('shipper').value='';document.getElementById('consignee').value='';
     document.getElementById('shipper-new').style.display='none';document.getElementById('consignee-new').style.display='none';
     document.getElementById('v2cargo').innerHTML='';lineNo=0;addV2Cargo();
     items=[];invI=0;renderItems();document.getElementById('notes').value='';
+    document.getElementById('recvBy').value=WAREHOUSE_USER;document.getElementById('whLoc').value='';
     document.querySelectorAll('.chip.on').forEach(function(c){c.classList.remove('on');});
     var b=document.getElementById('rxbox');b.classList.add('empty');document.getElementById('rxNum').textContent='Select consignee';
     document.getElementById('rxTag').textContent='New intake';
@@ -882,4 +920,5 @@
   addV2Cargo();
   render();
   initPrinter();
+  document.getElementById('recvBy').value=WAREHOUSE_USER;
 </script>

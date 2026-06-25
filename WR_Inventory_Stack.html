@@ -1,0 +1,477 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warehouse Receipts — LCL Ocean Services</title>
+<style>
+  :root{
+    --navy:#1b2545; --teal:#54bcc6; --teal-d:#3a9aa6; --orange:#e8743b;
+    --sidebar:#41525e; --sidebar-hi:#54bcc6; --bg:#f5f7f9; --card:#fff;
+    --line:#e7ebef; --ink:#2a3340; --muted:#8a94a0; --ok:#1f8a4c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Roboto,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+  .layout{display:flex;min-height:100vh}
+
+  /* sidebar */
+  .side{width:236px;flex:0 0 236px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column}
+  .brand{background:#fff;padding:16px 18px;height:84px;display:flex;align-items:center}
+  .brand svg{height:42px;width:auto}
+  .nav{padding:14px 10px;display:flex;flex-direction:column;gap:3px}
+  .nav a{display:flex;align-items:center;gap:13px;color:#e8eef0;text-decoration:none;padding:13px 14px;border-radius:9px;font-size:14.5px}
+  .nav a .i{width:20px;text-align:center;opacity:.95}
+  .nav a:hover{background:rgba(255,255,255,.08)}
+  .nav a.on{background:var(--teal);color:#fff;font-weight:600}
+
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{background:#fff;height:64px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;padding:0 28px}
+  .topbar .who{font-weight:800;color:var(--navy)}
+  .content{padding:22px 28px 40px;overflow:auto}
+
+  .crumb{font-size:13px;color:var(--muted);margin-bottom:10px}
+  .crumb b{color:var(--navy)}
+  .back{display:inline-flex;align-items:center;gap:7px;color:var(--teal-d);text-decoration:none;font-size:14px;margin-bottom:8px}
+  .headrow{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:34px;font-weight:800;color:var(--navy);margin:6px 0 4px}
+  .pill-pending{display:inline-block;background:#fff0e6;color:var(--orange);border:1px solid #f3c79a;font-size:12px;font-weight:700;padding:3px 11px;border-radius:20px;vertical-align:middle;margin-left:10px}
+  .btn{border:none;border-radius:22px;padding:11px 20px;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer}
+  .btn.teal{background:var(--teal);color:#fff}
+  .btn.teal:hover{background:var(--teal-d)}
+
+  /* search row */
+  .tabs{display:flex;gap:9px;margin:18px 0 2px}
+  .tab{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:22px;padding:10px 18px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer}
+  .tab.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .searches{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0 8px}
+  .sbox{display:flex;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:230px;flex:1}
+  .sbox input{flex:1;border:none;padding:12px 14px;font-size:14px;font-family:inherit;outline:none;background:transparent}
+  .sbox .sbtn{background:#aeb6bd;color:#fff;border:none;padding:0 18px;align-self:stretch;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+
+  /* table */
+  .tablewrap{background:#fff;border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:visible}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;font-size:13px;color:#6b7682;font-weight:600;padding:16px 14px;border-bottom:1px solid var(--line);background:#fafbfc;white-space:nowrap}
+  thead th.r,tbody td.r{text-align:right}
+  tbody td{padding:16px 14px;border-bottom:1px solid #f1f3f6;font-size:14px;vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafdfe}
+  .wrn{font-weight:800;color:var(--navy)}
+  .cust{font-weight:600;color:var(--ink)}
+  .status{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+  .status.pending{background:#fff0e6;color:var(--orange)}
+  .status.approved{background:#e3f6ea;color:var(--ok)}
+  .src{display:inline-block;font-size:9.5px;font-weight:700;color:var(--teal-d);background:#e9f6f8;border-radius:10px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+
+  /* actions menu */
+  .actions{position:relative;text-align:right}
+  .dots{border:none;background:none;font-size:22px;color:var(--teal);cursor:pointer;line-height:1;padding:0 6px;letter-spacing:1px}
+  .menu{position:absolute;right:8px;top:32px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(20,35,60,.16);width:210px;z-index:30;display:none;overflow:hidden}
+  .menu.show{display:block}
+  .menu button{display:flex;align-items:center;gap:10px;width:100%;border:none;background:#fff;text-align:left;padding:12px 14px;font-size:13.5px;font-family:inherit;color:var(--ink);cursor:pointer}
+  .menu button:hover{background:#f4f8f9}
+  .menu button.approve{color:var(--ok);font-weight:700}
+  .menu .sep{height:1px;background:var(--line)}
+
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(18,30,52,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:40px 16px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:560px;max-width:100%;padding:24px}
+  .modal h2{margin:0 0 4px;color:var(--navy);font-size:20px}
+  .modal .trail{font-size:12px;color:var(--muted);margin:0 0 16px}
+  .frow{display:flex;gap:14px;margin-bottom:13px;flex-wrap:wrap}
+  .frow>div{flex:1;min-width:140px}
+  label.f{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:5px}
+  .field{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit}
+  .field:focus{outline:none;border-color:var(--teal)}
+  .modal .mactions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+  .btn.ghost{background:#fff;border:1.5px solid var(--line);color:var(--muted)}
+  .dl{font-size:13px;line-height:1.7}
+  .dl b{color:var(--navy)}
+  .taglist{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .tag{background:#eef4f6;border:1px solid #d7e6e9;border-radius:7px;padding:3px 8px;font-size:12px;font-family:"Courier New",monospace}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1b2545;color:#fff;padding:11px 18px;border-radius:24px;font-size:13px;opacity:0;transition:.25s;z-index:90}
+  .toast.show{opacity:1;bottom:34px}
+
+  /* export print — renders the receipt as the approved vector form (pixel-faithful) */
+  #printArea{display:none}
+  @media print{
+    @page{size:letter;margin:0.4in}
+    body>*{display:none !important}
+    #printArea{display:block !important}
+    .svgpage{width:100%;page-break-after:always}
+    .svgpage.last{page-break-after:auto}
+    .svgpage svg{width:100%;height:auto;display:block}
+  }
+</style>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 624 150" xmlns="http://www.w3.org/2000/svg" aria-label="LCL Ocean Services">
+        <rect x="8" y="14" width="42" height="48" rx="13" fill="#33b6c2"/>
+        <polygon points="124,12 124,98 54,55" fill="#33b6c2"/>
+        <path d="M8,108 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>
+        <path d="M8,130 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>
+        <text x="138" y="118" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="104" fill="#33b6c2">LCL</text>
+        <text x="350" y="66" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="54" fill="#33b6c2">OCEAN</text>
+        <text x="350" y="120" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="47" fill="#e87440">SERVICES</text>
+      </svg>
+    </div>
+    <nav class="nav">
+      <a href="#"><span class="i">🧾</span> Customers</a>
+      <a href="#"><span class="i">🚚</span> Suppliers</a>
+      <a href="#"><span class="i">⚓</span> Preloading</a>
+      <a href="#" class="on"><span class="i">📦</span> Warehouse Receipts</a>
+      <a href="#"><span class="i">👥</span> User Management</a>
+      <a href="#"><span class="i">⭐</span> Scoring Profiles</a>
+      <a href="#"><span class="i">💬</span> ChatGPT</a>
+      <a href="#"><span class="i">⚙️</span> Settings</a>
+      <a href="TC22_Test_Hub.html"><span class="i">⏻</span> Logout</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar"><span class="who">Ariel Comas</span></div>
+    <div class="content">
+      <div class="crumb">Customers / <b>Warehouse Receipts</b></div>
+      <a class="back" href="TC22_Test_Hub.html">← Back</a>
+
+      <div class="headrow">
+        <h1>Warehouse Receipts <span class="pill-pending" id="pendCount">0 pending approval</span></h1>
+        <div style="display:flex;gap:10px">
+          <button class="btn ghost" onclick="clearScanned()">Clear scanned</button>
+          <button class="btn teal" onclick="reloadStack()">↻ Refresh from scanner</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab on" id="tabDock" onclick="setView('dock')">📥 Dock — Pending (<span id="cDock">0</span>)</button>
+        <button class="tab" id="tabInv" onclick="setView('inventory')">✓ Customer Inventory — Approved (<span id="cInv">0</span>)</button>
+      </div>
+
+      <div class="searches">
+        <div class="sbox"><input id="qTrack" placeholder="Search Tracking #" oninput="render()"><button class="sbtn" onclick="render()">Search</button></div>
+        <div class="sbox"><input id="qCust" placeholder="Search Customer" oninput="render()"><button class="sbtn" onclick="render()">Search</button></div>
+        <div class="sbox"><input id="qSupp" placeholder="Search Supplier" oninput="render()"><button class="sbtn" onclick="render()">Search</button></div>
+        <div class="sbox"><input id="qDesc" placeholder="Search Description" oninput="render()"><button class="sbtn" onclick="render()">Search</button></div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Customer Name</th><th>Supplier</th>
+              <th class="r">PCS</th><th class="r">PLTS</th><th>WR</th>
+              <th class="r">Cubic Ft</th><th class="r">Weight</th>
+              <th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty" style="display:none">No warehouse receipts match your search.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW / EDIT modal -->
+<div class="overlay" id="ov">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+<datalist id="dlCust"></datalist>
+<datalist id="dlSupp"></datalist>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script>
+  var CUSTOMERS=["Sports Center","The Sports Center","Charlestown Creative","Custom Computers Limited","Rubins Department Store","A & A Wholesale","Abaco Kitchen","3D Construction"];
+  var SUPPLIERS=["Nike","Puma","Luxottica","Amazon.com","ThredUp","Sundance Graphics, LLC","ENI-JR286 INC.","Wona Trading"];
+
+  // seed receipts (pending approval stack). dims -> cubic ft auto.
+  var SEED=[
+    {wr:"60292",date:"06/22/2026",customer:"Charlestown Creative",supplier:"Sundance Graphics, LLC",pcs:25,plts:0,weight:825,dims:[{l:48,w:40,h:40,qty:1}],cargo:[{pcs:"25",pkg:"Pallet",weight:"825",dim:"48 × 40 × 40"}],tracking:["1Z44071180001"],items:["Printed banners — assorted, 25 ct"],receivedBy:"M. Rolle",whLoc:"A-12",flags:[],status:"Pending",editedBy:""},
+    {wr:"2132",date:"06/18/2026",customer:"Custom Computers Limited",supplier:"Amazon.com",pcs:1,plts:0,weight:4,dims:[{l:16,w:12,h:18,qty:1}],cargo:[{pcs:"1",pkg:"Carton",weight:"4",dim:"16 × 12 × 18"}],tracking:["114-8044958-6141824"],items:["Networking hardware"],receivedBy:"D. Smith",whLoc:"B-04",flags:["Damaged"],status:"Pending",editedBy:""},
+    {wr:"4050",date:"06/22/2026",customer:"The Sports Center",supplier:"ENI-JR286 INC.",pcs:1,plts:0,weight:6,dims:[{l:24,w:12,h:12,qty:1}],cargo:[{pcs:"1",pkg:"Carton",weight:"6",dim:"24 × 12 × 12"}],tracking:["ENIJR2860041"],items:["Soccer training equipment"],receivedBy:"M. Rolle",whLoc:"",flags:["Short"],status:"Pending",editedBy:""},
+    {wr:"AAW-1002-2026",date:"06/21/2026",customer:"A & A Wholesale",supplier:"Amazon.com",pcs:10,plts:0,weight:150,dims:[{l:24,w:18,h:18,qty:10}],cargo:[{pcs:"10",pkg:"Carton",weight:"150",dim:"24 × 18 × 18"}],tracking:["1Z77A09020001"],items:["Amazon Basics HDMI cable — 50-pc box"],receivedBy:"D. Smith",whLoc:"C-09",flags:[],status:"Approved",editedBy:"A. Comas · 06/21 4:12 PM"}
+  ];
+
+  var DATA=[]; var view='dock'; var OFFICE_USER='Ariel Comas';
+  function cubic(dims){var c=0;(dims||[]).forEach(function(d){c+=(+d.l||0)*(+d.w||0)*(+d.h||0)*(+d.qty||1);});return c/1728;}
+  function cube(dims){return Math.ceil(cubic(dims));}  // rounded UP to next whole cubic foot
+  function fmt(n){return (Math.round(n*100)/100).toFixed(2);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function loadStack(){
+    var pend=[],appr=[];
+    try{ pend=JSON.parse(localStorage.getItem('lcl_wr_stack')||'[]'); }catch(e){}
+    try{ appr=JSON.parse(localStorage.getItem('lcl_inventory')||'[]'); }catch(e){}
+    DATA=pend.map(normalize).concat(appr.map(normalize)).concat(SEED.map(normalize));
+  }
+  function normalize(r){
+    return {
+      wr:r.wr||'—', date:r.date||'', customer:r.customer||r.consignee||'', supplier:r.supplier||r.shipper||'',
+      pcs:(r.pcs!=null?r.pcs:0), plts:(r.plts!=null?r.plts:0), weight:(r.weight!=null?r.weight:0),
+      dims:r.dims||[], cargo:r.cargo||[], tracking:r.tracking||[], items:r.items||[],
+      receivedBy:r.receivedBy||'', whLoc:r.whLoc||'', flags:r.flags||[], notes:r.notes||'',
+      status:r.status||'Pending', editedBy:r.editedBy||'', approvedBy:r.approvedBy||'', source:r.source||''
+    };
+  }
+  function reloadStack(){ loadStack(); render(); toast('Refreshed — '+DATA.length+' receipts'); }
+  function persistStores(){
+    try{
+      localStorage.setItem('lcl_wr_stack', JSON.stringify(DATA.filter(function(x){return x.source==='scanner'&&x.status!=='Approved';})));
+      localStorage.setItem('lcl_inventory', JSON.stringify(DATA.filter(function(x){return x.source==='scanner'&&x.status==='Approved';})));
+    }catch(e){}
+  }
+  function deleteRec(i){
+    var r=DATA[i]; if(!r) return;
+    if(!confirm('Delete WR #'+r.wr+'? This removes it permanently.')) return;
+    DATA.splice(i,1); persistStores(); render(); toast('Deleted WR #'+r.wr);
+  }
+  function clearScanned(){
+    if(!confirm('Clear all scanned receipts (dock + approved) from the demo? Seed examples stay.')) return;
+    try{ localStorage.removeItem('lcl_wr_stack'); localStorage.removeItem('lcl_inventory'); }catch(e){}
+    loadStack(); render(); toast('Cleared scanned receipts');
+  }
+
+  function matches(r){
+    var t=val('qTrack'),c=val('qCust'),s=val('qSupp'),d=val('qDesc');
+    if(t && (r.tracking.join(' ').toLowerCase().indexOf(t)<0 && (''+r.wr).toLowerCase().indexOf(t)<0)) return false;
+    if(c && r.customer.toLowerCase().indexOf(c)<0) return false;
+    if(s && r.supplier.toLowerCase().indexOf(s)<0) return false;
+    if(d && r.items.join(' ').toLowerCase().indexOf(d)<0) return false;
+    return true;
+  }
+  function val(id){return document.getElementById(id).value.trim().toLowerCase();}
+
+  function setView(v){
+    view=v;
+    document.getElementById('tabDock').classList.toggle('on',v==='dock');
+    document.getElementById('tabInv').classList.toggle('on',v==='inventory');
+    render();
+  }
+  function render(){
+    var rows=document.getElementById('rows'); rows.innerHTML='';
+    var want = view==='inventory' ? 'Approved' : 'Pending';
+    var list=DATA.filter(function(r){return r.status===want && matches(r);});
+    var pend=0,appr=0;
+    DATA.forEach(function(r){ if(r.status==='Approved') appr++; else pend++; });
+    document.getElementById('cDock').textContent=pend;
+    document.getElementById('cInv').textContent=appr;
+    document.getElementById('pendCount').textContent=pend+' pending approval';
+    var em=document.getElementById('empty');
+    em.style.display=list.length?'none':'block';
+    em.textContent = list.length?'' : (view==='inventory' ? 'No approved receipts yet.' : 'Nothing pending on the dock 🎉');
+    list.forEach(function(r){
+      var idx=DATA.indexOf(r);
+      var tr=document.createElement('tr');
+      tr.innerHTML=
+        '<td>'+esc(r.date)+'</td>'+
+        '<td class="cust">'+esc(r.customer||'—')+(r.source==='scanner'?'<span class="src">SCANNED</span>':'')+'</td>'+
+        '<td>'+esc(r.supplier||'—')+'</td>'+
+        '<td class="r">'+esc(r.pcs)+'</td>'+
+        '<td class="r">'+esc(r.plts)+'</td>'+
+        '<td class="wrn">'+esc(r.wr)+'</td>'+
+        '<td class="r">'+cube(r.dims)+'</td>'+
+        '<td class="r">'+fmt(r.weight)+'</td>'+
+        '<td><span class="status '+(r.status==='Approved'?'approved':'pending')+'">'+r.status.toUpperCase()+'</span></td>'+
+        '<td class="actions">'+
+          '<button class="dots" onclick="toggleMenu(event,'+idx+')">⋯</button>'+
+          '<div class="menu" id="m'+idx+'">'+
+            '<button onclick="viewRec('+idx+')">👁  View</button>'+
+            '<button onclick="editRec('+idx+')">✎  Edit</button>'+
+            (r.status==='Pending'?'<button class="approve" onclick="approveRec('+idx+')">✓  Approve &amp; assign</button>':'')+
+            '<div class="sep"></div>'+
+            '<button onclick="exportRec('+idx+')">⤓  Export to PDF</button>'+
+            '<button onclick="deleteRec('+idx+')" style="color:#c0392b">🗑  Delete</button>'+
+          '</div>'+
+        '</td>';
+      rows.appendChild(tr);
+    });
+  }
+
+  var openMenu=null;
+  function toggleMenu(e,idx){
+    e.stopPropagation();
+    if(openMenu!=null && openMenu!==idx){var p=document.getElementById('m'+openMenu);if(p)p.classList.remove('show');}
+    var m=document.getElementById('m'+idx); m.classList.toggle('show');
+    openMenu=m.classList.contains('show')?idx:null;
+  }
+  document.addEventListener('click',function(){if(openMenu!=null){var p=document.getElementById('m'+openMenu);if(p)p.classList.remove('show');openMenu=null;}});
+
+  function closeOv(){document.getElementById('ov').classList.remove('show');}
+  function showOv(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('ov').classList.add('show');}
+
+  function viewRec(i){
+    var r=DATA[i];
+    showOv(
+      '<h2>WR #'+esc(r.wr)+'</h2>'+
+      '<div class="trail">'+(r.editedBy?('Last edited by '+esc(r.editedBy)):'Not yet edited')+'</div>'+
+      '<div class="dl">'+
+        '<div><b>Date:</b> '+esc(r.date)+'</div>'+
+        '<div><b>Customer:</b> '+esc(r.customer||'—')+'</div>'+
+        '<div><b>Supplier:</b> '+esc(r.supplier||'—')+'</div>'+
+        '<div><b>Pieces / Pallets:</b> '+esc(r.pcs)+' pcs · '+esc(r.plts)+' plts</div>'+
+        '<div><b>Cubic Ft:</b> '+cube(r.dims)+'</div>'+
+        '<div><b>Weight:</b> '+fmt(r.weight)+'</div>'+
+        '<div><b>Status:</b> '+esc(r.status)+(r.approvedBy?(' &nbsp; <b>Approved by:</b> '+esc(r.approvedBy)):'')+'</div>'+
+        '<div><b>Received by (warehouse):</b> '+esc(r.receivedBy||'—')+'</div>'+
+        '<div><b>WH location:</b> '+esc(r.whLoc||'—')+'</div>'+
+        '<div><b>Condition:</b> '+(r.flags&&r.flags.length?('<span style="color:#c0392b;font-weight:700">'+esc(r.flags.join(', '))+'</span>'):'No damages or shortages noted')+'</div>'+
+        '<div style="margin-top:8px"><b>Tracking #s:</b><div class="taglist">'+(r.tracking.length?r.tracking.map(function(t){return '<span class="tag">'+esc(t)+'</span>';}).join(''):'<span class="tag">none</span>')+'</div></div>'+
+        '<div style="margin-top:8px"><b>Item descriptions:</b><div>'+(r.items.length?r.items.map(function(d){return '• '+esc(d);}).join('<br>'):'—')+'</div></div>'+
+        (r.notes?('<div style="margin-top:8px"><b>Notes:</b><div style="white-space:pre-wrap">'+esc(r.notes)+'</div></div>'):'')+
+      '</div>'+
+      '<div class="mactions"><button class="btn ghost" onclick="closeOv()">Close</button><button class="btn teal" onclick="exportRec('+i+')">Export to PDF</button></div>'
+    );
+  }
+
+  function editRec(i){
+    var r=DATA[i];
+    showOv(
+      '<h2>Edit WR #'+esc(r.wr)+'</h2>'+
+      '<div class="trail">'+(r.editedBy?('Last edited by '+esc(r.editedBy)):'Not yet edited')+'</div>'+
+      '<div class="frow"><div><label class="f">Date</label><input class="field" id="eDate" value="'+esc(r.date)+'"></div>'+
+        '<div><label class="f">WR #</label><input class="field" id="eWr" value="'+esc(r.wr)+'"></div></div>'+
+      '<div class="frow"><div><label class="f">Customer (search or add)</label><input class="field" id="eCust" list="dlCust" value="'+esc(r.customer)+'"></div>'+
+        '<div><label class="f">Supplier (search or add)</label><input class="field" id="eSupp" list="dlSupp" value="'+esc(r.supplier)+'"></div></div>'+
+      '<div class="frow"><div><label class="f">PCS</label><input class="field" id="ePcs" inputmode="numeric" value="'+esc(r.pcs)+'"></div>'+
+        '<div><label class="f">PLTS</label><input class="field" id="ePlts" inputmode="numeric" value="'+esc(r.plts)+'"></div>'+
+        '<div><label class="f">Weight</label><input class="field" id="eWt" inputmode="decimal" value="'+esc(r.weight)+'"></div></div>'+
+      '<div class="frow"><div><label class="f">Cubic Ft (auto from dims)</label><input class="field" id="eCube" value="'+cube(r.dims)+'" readonly style="background:#f4f6f9"></div></div>'+
+      '<div class="mactions"><button class="btn ghost" onclick="closeOv()">Cancel</button><button class="btn teal" onclick="saveRec('+i+')">Save changes</button></div>'
+    );
+  }
+  function saveRec(i){
+    var r=DATA[i];
+    r.date=g('eDate'); r.wr=g('eWr'); r.customer=g('eCust'); r.supplier=g('eSupp');
+    r.pcs=+g('ePcs')||0; r.plts=+g('ePlts')||0; r.weight=+g('eWt')||0;
+    r.editedBy='A. Comas · '+now();
+    refreshDatalists(); closeOv(); render(); toast('Saved — WR #'+r.wr);
+  }
+  function g(id){return document.getElementById(id).value.trim();}
+  function now(){return new Date().toLocaleString([], {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}
+
+  function approveRec(i){
+    var r=DATA[i];
+    if(!r.customer){toast('Set a customer before approving');editRec(i);return;}
+    if(!confirm('Approve & sign WR #'+r.wr+' as '+OFFICE_USER+'?\nIt will be added to '+r.customer+"'s inventory and leave the dock.")) return;
+    r.status='Approved'; r.approvedBy=OFFICE_USER+' · '+now();
+    persistStores(); render();
+    var left=DATA.filter(function(x){return x.status==='Pending';}).length;
+    toast('✓ Added to '+r.customer+' inventory · '+left+' left on the dock');
+  }
+
+  /* ---- export renders the approved vector WR form (pixel-faithful) ---- */
+  var LOGO_SVG='<g transform="translate(42,30) scale(0.40)">'+
+    '<rect x="8" y="14" width="42" height="48" rx="13" fill="#33b6c2"/>'+
+    '<polygon points="124,12 124,98 54,55" fill="#33b6c2"/>'+
+    '<path d="M8,108 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>'+
+    '<path d="M8,130 q16,-15 32,0 t32,0 t32,0" stroke="#e87440" stroke-width="11" fill="none" stroke-linecap="round"/>'+
+    '<text x="138" y="118" font-family="Arial" font-weight="bold" font-size="104" fill="#33b6c2">LCL</text>'+
+    '<text x="350" y="66" font-family="Arial" font-weight="bold" font-size="54" fill="#33b6c2">OCEAN</text>'+
+    '<text x="350" y="120" font-family="Arial" font-weight="bold" font-size="47" fill="#e87440">SERVICES</text></g>';
+  function sEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function sBox(x,y,w,h,sw){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="none" stroke="#000" stroke-width="'+(sw||1.5)+'"/>';}
+  function sLn(a,b,c,d,sw){return '<line x1="'+a+'" y1="'+b+'" x2="'+c+'" y2="'+d+'" stroke="#000" stroke-width="'+(sw||1)+'"/>';}
+  function sT(x,y,s,o){o=o||{};return '<text x="'+x+'" y="'+y+'" font-family="Arial,Helvetica,sans-serif" font-size="'+(o.fs||13)+'" font-weight="'+(o.b?'bold':'normal')+'" font-style="'+(o.it?'italic':'normal')+'" fill="'+(o.fill||'#000')+'" text-anchor="'+(o.a||'start')+'">'+sEsc(s)+'</text>';}
+  function sChk(x,y,on){var e=sBox(x,y,15,15,1.4); if(on)e+=sT(x+7.5,y+12.5,'X',{fs:13,b:true,a:'middle'}); return e;}
+  function wrParts(wr){var m=(''+wr).match(/^[A-Za-z0-9]+-(\d+)-\d+$/);return m?{big:m[1],small:wr}:{big:wr,small:''};}
+  function sHeader(e,r){
+    e.push(LOGO_SVG);
+    e.push(sT(46,108,'11701 NW 102nd Rd. Suite 15',{fs:12,it:true,fill:'#222'}));
+    e.push(sT(46,125,'Medley, FL 33178',{fs:12,it:true,fill:'#222'}));
+    e.push(sT(585,50,'Picked by:',{fs:12})); e.push(sBox(672,34,133,26));
+    e.push(sT(585,98,'Receipt #',{fs:12}));
+    var p=wrParts(r.wr); e.push(sBox(672,76,133,40)); e.push(sT(738,104,p.big,{fs:24,b:true,a:'middle'}));
+    if(p.small) e.push(sT(738,134,p.small,{fs:11,fill:'#555',a:'middle'}));
+  }
+  function page1Svg(r){
+    var W=850,H=1080,e=['<rect width="'+W+'" height="'+H+'" fill="#fff"/>']; sHeader(e,r);
+    e.push(sT(46,165,'Warehouse Receipt',{fs:23,b:true}));
+    e.push(sT(46,196,'Date / Time:',{fs:12,b:true})); e.push(sLn(132,198,400,198)); e.push(sT(140,193,r.date,{fs:12}));
+    e.push(sT(430,196,'Recvd By:',{fs:12,b:true})); e.push(sLn(505,198,805,198)); e.push(sT(513,193,r.receivedBy||'',{fs:12}));
+    e.push(sBox(46,212,360,104)); e.push(sT(54,230,'SHIPPER:',{fs:11,b:true})); e.push(sT(54,266,r.supplier||'',{fs:16,b:true})); e.push(sBox(286,286,118,28,1));
+    e.push(sBox(445,212,360,104)); e.push(sT(453,230,'CONSIGNEE:',{fs:11,b:true})); e.push(sT(453,266,r.customer||'',{fs:16,b:true})); e.push(sBox(685,286,118,28,1));
+    e.push(sT(46,344,'CARGO INFORMATION',{fs:14,b:true,it:true}));
+    var cy=352, cols=[[46,'PCS.'],[116,'PACKAGE'],[236,'WEIGHT'],[326,'DIMS'],[476,'Description / Trk. Number']];
+    e.push(sBox(46,cy,759,26));
+    cols.forEach(function(c){ e.push(sT(c[0]+6,cy+18,c[1],{fs:11,b:true})); if(c[0]>46) e.push(sLn(c[0],cy,c[0],cy+26+4*30)); });
+    var cargo=(r.cargo&&r.cargo.length)?r.cargo:[{pcs:r.pcs,pkg:'',weight:r.weight,dim:''}];
+    for(var i=0;i<4;i++){ var ry=cy+26+i*30; e.push(sLn(46,ry+30,805,ry+30));
+      var c=cargo[i]; if(c){var xs=[52,122,242,332],vals=[c.pcs,c.pkg,c.weight,c.dim]; for(var k=0;k<4;k++) e.push(sT(xs[k],ry+20,vals[k]==null?'':vals[k],{fs:11}));} }
+    e.push(sBox(46,cy,759,26+4*30));
+    var fl=r.flags||[], dy=cy+26+4*30+26;
+    e.push(sT(46,dy,'Freight Arrival Discrepancies:',{fs:12,b:true}));
+    e.push(sChk(250,dy-12,false)); e.push(sT(272,dy,'Not Packed for Export',{fs:11}));
+    e.push(sChk(430,dy-12,fl.indexOf('Damaged')>-1)); e.push(sT(452,dy,'Damaged',{fs:11}));
+    e.push(sChk(560,dy-12,false)); e.push(sT(582,dy,'Other',{fs:11}));
+    var ay=dy+30;
+    var ai=[['Short',fl.indexOf('Short')>-1],['Damaged',fl.indexOf('Damaged')>-1],['Pictures',(r.items&&r.items.length>0)],['Hazmat',fl.indexOf('Hazmat')>-1]];
+    var aih=26+ai.length*24;
+    e.push(sBox(46,ay,300,26)); e.push(sT(52,ay+18,'Additional Info',{fs:11,b:true,it:true}));
+    e.push(sLn(196,ay,196,ay+aih)); e.push(sLn(248,ay,248,ay+aih));
+    e.push(sT(222,ay+18,'Yes ?',{fs:10,b:true,a:'middle'})); e.push(sT(297,ay+18,'No ?',{fs:10,b:true,a:'middle'}));
+    e.push(sBox(46,ay,300,aih));
+    ai.forEach(function(row,i){var ry=ay+26+i*24; e.push(sLn(46,ry,346,ry)); e.push(sT(52,ry+17,row[0],{fs:11,b:true})); e.push(sT(row[1]?222:297,ry+17,'X',{fs:12,b:true,a:'middle'}));});
+    var rx=400;
+    e.push(sT(rx,ay+18,'Notes:',{fs:12,b:true})); e.push(sBox(rx,ay+26,405,64,1));
+    var nt=(r.notes||'').replace(/\n/g,' '); e.push(sT(rx+8,ay+48,nt.slice(0,62),{fs:11})); if(nt.length>62)e.push(sT(rx+8,ay+66,nt.slice(62,124),{fs:11}));
+    e.push(sT(rx,ay+118,'WH LOC:',{fs:12,b:true})); e.push(sLn(rx+72,ay+120,805,ay+120)); e.push(sT(rx+80,ay+115,r.whLoc||'',{fs:12}));
+    var ly=ay+aih+40;
+    ["The maximum limit of warehouseman's liability for loss or damage to merchandise, will be exclusively",
+     "presumed to be 12 1/2 cents per pound or per article whichever is the lesser.",
+     "ONLY ARTICLES LOST OR DAMAGED WILL BE CONSIDERED for coverage.",
+     "In addition storage in & out for commodities shall be charged as per"].forEach(function(s,k){e.push(sT(46,ly+k*15,s,{fs:9.5,fill:'#333'}));});
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'">'+e.join('')+'</svg>';
+  }
+  function page2Svg(r){
+    var W=850,H=1080,e=['<rect width="'+W+'" height="'+H+'" fill="#fff"/>']; sHeader(e,r);
+    e.push(sT(46,165,'Warehouse Receipt',{fs:23,b:true}));
+    e.push(sT(46,188,'Page 2 — Tracking & Descriptions · '+(r.customer||'')+' · '+(r.date||''),{fs:12,fill:'#555'}));
+    var ty=214, n=Math.max((r.tracking||[]).length,(r.items||[]).length,6);
+    e.push(sBox(46,ty,759,26)); e.push(sLn(110,ty,110,ty+26+n*30)); e.push(sLn(420,ty,420,ty+26+n*30));
+    e.push(sT(60,ty+18,'#',{fs:11,b:true})); e.push(sT(120,ty+18,'Tracking Number',{fs:11,b:true})); e.push(sT(430,ty+18,'Description',{fs:11,b:true}));
+    for(var i=0;i<n;i++){ var ry=ty+26+i*30; e.push(sLn(46,ry+30,805,ry+30));
+      var tk=(r.tracking||[])[i], it=(r.items||[])[i];
+      if(tk||it){ e.push(sT(78,ry+20,String(i+1),{fs:11,a:'middle'})); e.push(sT(120,ry+20,tk||'',{fs:11})); e.push(sT(430,ry+20,it||'',{fs:11})); } }
+    e.push(sBox(46,ty,759,26+n*30));
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'">'+e.join('')+'</svg>';
+  }
+  function exportRec(i){
+    var r=DATA[i]; closeOv();
+    var hasP2=(r.tracking&&r.tracking.length)||(r.items&&r.items.length);
+    var html='<div class="svgpage'+(hasP2?'':' last')+'">'+page1Svg(r)+'</div>';
+    if(hasP2) html+='<div class="svgpage last">'+page2Svg(r)+'</div>';
+    document.getElementById('printArea').innerHTML=html;
+    var oldTitle=document.title; document.title=pdfName(r);
+    function restore(){document.title=oldTitle;window.removeEventListener('afterprint',restore);}
+    window.addEventListener('afterprint',restore); setTimeout(restore,8000);
+    setTimeout(function(){window.print();},250);
+    toast('Export — choose Save as PDF or your printer');
+  }
+  function pdfName(r){
+    var num=r.wr, m=(''+r.wr).match(/^[A-Za-z0-9]+-(\d+)-\d+$/);
+    if(m) num=m[1];
+    return ((r.customer||'WR').trim()+' WR '+num).replace(/[\\/:*?"<>|]/g,' ').trim();
+  }
+
+  function refreshDatalists(){
+    var cs={},ss={};
+    CUSTOMERS.forEach(function(c){cs[c]=1;}); SUPPLIERS.forEach(function(s){ss[s]=1;});
+    DATA.forEach(function(r){if(r.customer)cs[r.customer]=1;if(r.supplier)ss[r.supplier]=1;});
+    document.getElementById('dlCust').innerHTML=Object.keys(cs).map(function(c){return '<option value="'+esc(c)+'">';}).join('');
+    document.getElementById('dlSupp').innerHTML=Object.keys(ss).map(function(s){return '<option value="'+esc(s)+'">';}).join('');
+  }
+
+  var tT;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show')},2000);}
+
+  loadStack(); refreshDatalists(); render();
+</script>
